@@ -19,6 +19,9 @@
         <button class="admin-nav-btn" onclick="showAdminTab('tab-promos', this)">&#x1F3DF; Promos</button>
         <button class="admin-nav-btn" onclick="showAdminTab('tab-shop', this)">&#x1F6D2; Shop</button>
         <button class="admin-nav-btn" onclick="showAdminTab('tab-events', this)">&#x1F3C6; Events</button>
+        <button class="admin-nav-btn" onclick="showAdminTab('tab-gifts', this)">&#x1F381; Gifts/Sales</button>
+        <button class="admin-nav-btn" onclick="showAdminTab('tab-crystals', this)">&#x1F48E; Crystals</button>
+        <button class="admin-nav-btn" onclick="showAdminTab('tab-promos-v2', this)">&#x1F3F7; Promos v2</button>
       </nav>
       <div class="admin-sidebar-footer">
         <button class="btn btn-secondary btn-sm" onclick="window.location.href='/'">&#x2190; Back</button>
@@ -96,6 +99,107 @@
         </div>
         <div id="events-list" style="margin-top:16px"><div class="loading">Loading...</div></div>
       </div>
+
+      <!-- GIFTS / SALES TAB -->
+      <div id="tab-gifts" class="admin-tab" style="display:none">
+        <div class="admin-tab-header"><h2>&#x1F381; Gifts &amp; Sales</h2><button class="btn btn-primary btn-sm" onclick="loadGifts()">&#x1F504; Refresh</button></div>
+
+        <!-- Gift All -->
+        <div class="admin-card">
+          <h3>&#x1F381; Gift All Players</h3>
+          <p style="color:#aaa;font-size:13px;margin-bottom:12px">Instantly give rewards to ALL registered players</p>
+          <div class="admin-form-grid">
+            <div><label class="input-label">Type</label>
+              <select id="gift-all-type" class="input-field" onchange="updateGiftAllFields()">
+                <option value="coins">&#x1FA99; Coins</option>
+                <option value="crystals">&#x1F48E; Crystals</option>
+                <option value="box">&#x1F4E6; Loot Box</option>
+              </select>
+            </div>
+            <div id="gift-all-amount-wrap"><label class="input-label">Amount</label><input type="number" id="gift-all-amount" class="input-field" value="100" min="1"></div>
+            <div id="gift-all-box-wrap" style="display:none"><label class="input-label">Box Type</label>
+              <select id="gift-all-box" class="input-field">
+                <option value="skin_box">&#x1F381; Skin Box</option>
+                <option value="plant_box">&#x1F331; Plant Box</option>
+                <option value="crystal_box">&#x1F48E; Crystal Box</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-warning" onclick="giftAll()" style="margin-top:10px">&#x1F381; Gift All Players</button>
+          <div id="gift-all-result" style="margin-top:10px"></div>
+        </div>
+
+        <!-- Create Shop Gift/Sale -->
+        <div class="admin-card" style="margin-top:16px">
+          <h3>&#x2795; Create Shop Sale/Gift</h3>
+          <p style="color:#aaa;font-size:13px;margin-bottom:12px">Players can claim this gift from the Shop tab</p>
+          <div class="admin-form-grid">
+            <div><label class="input-label">Title</label><input type="text" id="sg-title" class="input-field" placeholder="e.g. Weekend Gift!"></div>
+            <div><label class="input-label">Description</label><input type="text" id="sg-desc" class="input-field" placeholder="Optional description"></div>
+            <div><label class="input-label">Duration (minutes, 0=forever)</label><input type="number" id="sg-duration" class="input-field" value="0" min="0"></div>
+          </div>
+          <div style="margin:12px 0">
+            <label class="input-label">Rewards (add multiple):</label>
+            <div id="sg-rewards-list" style="margin-top:8px;display:flex;flex-direction:column;gap:8px"></div>
+            <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+              <button class="btn btn-info btn-sm" onclick="addGiftReward('coins')">+ Coins</button>
+              <button class="btn btn-info btn-sm" onclick="addGiftReward('crystals')">+ Crystals</button>
+              <button class="btn btn-info btn-sm" onclick="addGiftReward('box')">+ Box</button>
+            </div>
+          </div>
+          <button class="btn btn-success" onclick="createShopGift()">&#x2705; Create Gift</button>
+          <div id="sg-result" style="margin-top:10px"></div>
+        </div>
+
+        <!-- Active Gifts List -->
+        <div class="admin-card" style="margin-top:16px">
+          <h3>&#x1F4CB; Active Gifts</h3>
+          <div id="admin-gifts-list"><div class="loading">Loading...</div></div>
+        </div>
+      </div>
+
+      <!-- CRYSTALS TAB -->
+      <div id="tab-crystals" class="admin-tab" style="display:none">
+        <div class="admin-tab-header"><h2>&#x1F48E; Crystals Management</h2></div>
+        <div class="admin-card">
+          <h3>&#x1F48E; Give Crystals to Player</h3>
+          <div class="admin-form-grid">
+            <div><label class="input-label">Player</label><select id="crystal-target" class="input-field"><option value="">Select player...</option></select></div>
+            <div><label class="input-label">Amount</label><input type="number" id="crystal-amount" class="input-field" value="50" min="1"></div>
+            <div style="display:flex;align-items:flex-end"><button class="btn btn-success" onclick="giveCrystals()">&#x1F48E; Give Crystals</button></div>
+          </div>
+          <div id="crystal-result" style="margin-top:10px"></div>
+        </div>
+        <div class="admin-card" style="margin-top:16px">
+          <h3>&#x1F4CA; Players Crystal Balance</h3>
+          <div id="crystals-table"><div class="loading">Loading...</div></div>
+        </div>
+      </div>
+
+      <!-- PROMOS V2 TAB -->
+      <div id="tab-promos-v2" class="admin-tab" style="display:none">
+        <div class="admin-tab-header"><h2>&#x1F3F7; Promo Codes v2 (Multi-Reward)</h2><button class="btn btn-primary btn-sm" onclick="loadAdminData()">&#x1F504; Refresh</button></div>
+        <div class="admin-card">
+          <h3>&#x2795; Create Multi-Reward Promo</h3>
+          <p style="color:#aaa;font-size:13px;margin-bottom:12px">Create promo codes with multiple reward types (coins + box + crystals)</p>
+          <div class="admin-form-grid">
+            <div><label class="input-label">Code</label><input type="text" id="pv2-code" class="input-field" placeholder="SUMMER2024" style="text-transform:uppercase"></div>
+            <div><label class="input-label">Max uses (0=unlimited)</label><input type="number" id="pv2-uses" class="input-field" value="0"></div>
+          </div>
+          <div style="margin:12px 0">
+            <label class="input-label">Rewards (add multiple):</label>
+            <div id="pv2-rewards-list" style="margin-top:8px;display:flex;flex-direction:column;gap:8px"></div>
+            <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+              <button class="btn btn-info btn-sm" onclick="addPromoReward('coins')">+ Coins</button>
+              <button class="btn btn-info btn-sm" onclick="addPromoReward('crystals')">+ Crystals</button>
+              <button class="btn btn-info btn-sm" onclick="addPromoReward('box')">+ Box</button>
+            </div>
+          </div>
+          <button class="btn btn-success" onclick="createPromoV2()">&#x2705; Create Promo v2</button>
+          <div id="pv2-result" style="margin-top:10px"></div>
+        </div>
+      </div>
+
     </div>
   </div>
   <div id="toast" class="toast hidden"></div>

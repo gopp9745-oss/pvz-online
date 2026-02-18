@@ -115,6 +115,11 @@ function loadDB() {
   }
   const data = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
   if (!data.customShopItems) data.customShopItems = [];
+  if (!data.shopGifts) data.shopGifts = [];
+  // Миграция: добавляем crystals пользователям
+  if (data.users) {
+    data.users.forEach(u => { if (u.crystals === undefined) u.crystals = 0; });
+  }
   return data;
 }
 
@@ -649,6 +654,307 @@ io.on('connection', (socket) => {
     db.customShopItems = (db.customShopItems || []).filter(i => i.id !== itemId);
     saveDB(db);
     socket.emit('admin_shop_result', { success: true, message: 'Товар удалён из магазина' });
+  });
+
+  // ==================== CRYSTALS ====================
+  socket.on('admin_give_crystals', (data) => {
+    const { userId, targetId, amount } = data;
+    db = loadDB();
+    const user = db.users.find(u => u.id === userId);
+    if (!user || !user.isAdmin) return socket.emit('admin_action_result', { success: false, message: 'Нет доступа' });
+    const target = db.users.find(u => u.id === targetId);
+    if (!target) return socket.emit('admin_action_result', { success: false, message: 'Игрок не найден' });
+    if (!target.crystals) target.crystals = 0;
+    target.crystals += parseInt(amount) || 0;
+    saveDB(db);
+    socket.emit('admin_action_result', { success: true, message: `Выдано ${amount} кристаллов игроку ${target.username}` });
+    // Уведомляем игрока если онлайн
+    for (const [sid, s] of io.sockets.sockets) {
+      if (s.userId === targetId) {
+        const safeTarget = { ...target }; delete safeTarget.password;
+        s.emit('fresh_user_data', { success: true, user: safeTarget });
+        s.emit('gift_received', { type: 'crystals', amount: parseInt(amount), message: `Вы получили ${amount} 💎 кристаллов от администратора!` });
+      }
+    }
+  });
+
+  // ==================== LOOT BOXES ====================
+  // Ящик 1: скины (skin_box), Ящик 2: растения (plant_box), Ящик 3: кристаллы (crystal_box)
+  const LOOT_BOXES = {
+    skin_box:    { id: 'skin_box',    name: '🎁 Ящик скинов',     emoji: '🎁', description: 'Случайный скин любой редкости', price: 300, type: 'box', rarity: 'rare' },
+    plant_box:   { id: 'plant_box',   name: '🌱 Ящик растений',   emoji: '📦', description: 'Случайное растение любой редкости', price: 250, type: 'box', rarity: 'rare' },
+    crystal_box: { id: 'crystal_box', name: '💎 Ящик кристаллов', emoji: '💎', description: 'От 10 до 100 кристаллов случайно', price: 200, type: 'box', rarity: 'epic' }
+  };
+
+  socket.on('open_loot_box', (data) => {
+    const { userId, boxType } = data;
+    db = loadDB();
+    const user = db.users.find(u => u.id === userId);
+    if (!user) return socket.emit('box_result', { success: false, message: 'Пользователь не найден' });
+
+    // Проверяем что ящик есть в инвентаре
+    if (!user.inventory) user.inventory = [];
+    const boxIdx = user.inventory.indexOf(boxType);
+    if (boxIdx === -1) return socket.emit('box_result', { success: false, message: 'Ящик не найден в инвентаре' });
+
+    // Убираем ящик из инвентаря
+    user.inventory.splice(boxIdx, 1);
+
+    let reward = null;
+    if (boxType === 'skin_box') {
+      const skins = ALL_SHOP_ITEMS.filter(i => i.type === 'skin');
+      const notOwned = skins.filter(i => !user.inventory.includes(i.id));
+      if (notOwned.length > 0) {
+        // Взвешенный рандом по редкости
+        const weights = { common: 50, rare: 30, epic: 15, legendary: 5 };
+        const pool = [];
+        notOwned.forEach(i => { for (let w = 0; w < (weights[i.rarity] || 10); w++) pool.push(i); });
+        const item = pool[Math.floor(Math.random() * pool.length)];
+        user.inventory.push(item.id);
+        reward = { type: 'skin', item, message: `🎉 Выпал скин: ${item.emoji} ${item.name} (${item.rarity})!` };
+      } else {
+        user.coins += 200;
+        reward = { type: 'coins', amount: 200, message: '🪙 Все скины уже есть! Получено 200 монет.' };
+      }
+    } else if (boxType === 'plant_box') {
+      const plants = ALL_SHOP_ITEMS.filter(i => i.type === 'plant');
+      const notOwned = plants.filter(i => !user.inventory.includes(i.id));
+      if (notOwned.length > 0) {
+        const weights = { common: 50, rare: 30, epic: 15, legendary: 5 };
+        const pool = [];
+        notOwned.forEach(i => { for (let w = 0; w < (weights[i.rarity] || 10); w++) pool.push(i); });
+        const item = pool[Math.floor(Math.random() * pool.length)];
+        user.inventory.push(item.id);
+        reward = { type: 'plant', item, message: `🎉 Выпало растение: ${item.emoji} ${item.name} (${item.rarity})!` };
+      } else {
+        user.coins += 150;
+        reward = { type: 'coins', amount: 150, message: '🪙 Все растения уже есть! Получено 150 монет.' };
+      }
+    } else if (boxType === 'crystal_box') {
+      const amount = Math.floor(Math.random() * 91) + 10; // 10-100
+      if (!user.crystals) user.crystals = 0;
+      user.crystals += amount;
+      reward = { type: 'crystals', amount, message: `💎 Выпало ${amount} кристаллов!` };
+    } else {
+      return socket.emit('box_result', { success: false, message: 'Неизвестный тип ящика' });
+    }
+
+    saveDB(db);
+    const safeUser = { ...user }; delete safeUser.password;
+    socket.emit('box_result', { success: true, reward, user: safeUser });
+  });
+
+  // ==================== SHOP GIFTS (акции от админа) ====================
+  socket.on('get_shop_gifts', () => {
+    db = loadDB();
+    const now = Date.now();
+    // Фильтруем просроченные
+    const active = (db.shopGifts || []).filter(g => g.active && (!g.expiresAt || g.expiresAt > now));
+    socket.emit('shop_gifts_data', active);
+  });
+
+  socket.on('claim_shop_gift', (data) => {
+    const { userId, giftId } = data;
+    db = loadDB();
+    const user = db.users.find(u => u.id === userId);
+    if (!user) return socket.emit('gift_claim_result', { success: false, message: 'Пользователь не найден' });
+
+    const now = Date.now();
+    const gift = (db.shopGifts || []).find(g => g.id === giftId);
+    if (!gift) return socket.emit('gift_claim_result', { success: false, message: 'Подарок не найден' });
+    if (!gift.active) return socket.emit('gift_claim_result', { success: false, message: 'Акция завершена' });
+    if (gift.expiresAt && gift.expiresAt < now) {
+      gift.active = false;
+      saveDB(db);
+      return socket.emit('gift_claim_result', { success: false, message: 'Акция истекла' });
+    }
+    if (!gift.claimedBy) gift.claimedBy = [];
+    if (gift.claimedBy.includes(userId)) return socket.emit('gift_claim_result', { success: false, message: 'Вы уже получили этот подарок' });
+
+    // Выдаём награды
+    const rewards = gift.rewards || [];
+    const messages = [];
+    for (const r of rewards) {
+      if (r.type === 'coins') {
+        user.coins += r.amount;
+        messages.push(`🪙 ${r.amount} монет`);
+      } else if (r.type === 'crystals') {
+        if (!user.crystals) user.crystals = 0;
+        user.crystals += r.amount;
+        messages.push(`💎 ${r.amount} кристаллов`);
+      } else if (r.type === 'box') {
+        if (!user.inventory) user.inventory = [];
+        user.inventory.push(r.boxType);
+        messages.push(`📦 ${LOOT_BOXES[r.boxType] ? LOOT_BOXES[r.boxType].name : r.boxType}`);
+      } else if (r.type === 'item') {
+        if (!user.inventory) user.inventory = [];
+        if (!user.inventory.includes(r.itemId)) {
+          user.inventory.push(r.itemId);
+          const item = ALL_SHOP_ITEMS.find(i => i.id === r.itemId);
+          messages.push(item ? `${item.emoji} ${item.name}` : `Предмет #${r.itemId}`);
+        } else {
+          user.coins += 100;
+          messages.push('🪙 100 монет (предмет уже есть)');
+        }
+      }
+    }
+
+    gift.claimedBy.push(userId);
+    gift.claimedCount = (gift.claimedCount || 0) + 1;
+    saveDB(db);
+
+    const safeUser = { ...user }; delete safeUser.password;
+    socket.emit('gift_claim_result', { success: true, message: `🎁 Получено: ${messages.join(', ')}!`, user: safeUser });
+  });
+
+  // ADMIN: создать подарок/акцию в магазине
+  socket.on('admin_create_shop_gift', (data) => {
+    const { userId, title, description, rewards, durationMinutes } = data;
+    db = loadDB();
+    const user = db.users.find(u => u.id === userId);
+    if (!user || !user.isAdmin) return socket.emit('admin_gift_result', { success: false, message: 'Нет доступа' });
+    if (!title || !rewards || !rewards.length) return socket.emit('admin_gift_result', { success: false, message: 'Заполните название и награды' });
+
+    const expiresAt = durationMinutes ? Date.now() + parseInt(durationMinutes) * 60 * 1000 : null;
+    const newGift = {
+      id: uuidv4(),
+      title: title.trim(),
+      description: description || '',
+      rewards,
+      active: true,
+      expiresAt,
+      claimedBy: [],
+      claimedCount: 0,
+      createdAt: new Date().toISOString(),
+      createdBy: user.username
+    };
+    if (!db.shopGifts) db.shopGifts = [];
+    db.shopGifts.push(newGift);
+    saveDB(db);
+
+    socket.emit('admin_gift_result', { success: true, message: `Акция "${newGift.title}" создана!`, gift: newGift });
+    // Уведомляем всех онлайн-игроков
+    io.emit('new_shop_gift', newGift);
+  });
+
+  socket.on('admin_delete_shop_gift', (data) => {
+    const { userId, giftId } = data;
+    db = loadDB();
+    const user = db.users.find(u => u.id === userId);
+    if (!user || !user.isAdmin) return socket.emit('admin_gift_result', { success: false, message: 'Нет доступа' });
+    db.shopGifts = (db.shopGifts || []).filter(g => g.id !== giftId);
+    saveDB(db);
+    socket.emit('admin_gift_result', { success: true, message: 'Акция удалена' });
+    io.emit('shop_gifts_updated');
+  });
+
+  socket.on('admin_toggle_shop_gift', (data) => {
+    const { userId, giftId } = data;
+    db = loadDB();
+    const user = db.users.find(u => u.id === userId);
+    if (!user || !user.isAdmin) return socket.emit('admin_gift_result', { success: false, message: 'Нет доступа' });
+    const gift = (db.shopGifts || []).find(g => g.id === giftId);
+    if (gift) { gift.active = !gift.active; saveDB(db); }
+    socket.emit('admin_gift_result', { success: true, message: 'Статус акции изменён' });
+    io.emit('shop_gifts_updated');
+  });
+
+  // ADMIN: раздать подарок всем игрокам сразу
+  socket.on('admin_gift_all', (data) => {
+    const { userId, rewards } = data;
+    db = loadDB();
+    const user = db.users.find(u => u.id === userId);
+    if (!user || !user.isAdmin) return socket.emit('admin_gift_result', { success: false, message: 'Нет доступа' });
+    if (!rewards || !rewards.length) return socket.emit('admin_gift_result', { success: false, message: 'Укажите награды' });
+
+    let count = 0;
+    for (const u of db.users) {
+      for (const r of rewards) {
+        if (r.type === 'coins') { u.coins += r.amount; }
+        else if (r.type === 'crystals') { if (!u.crystals) u.crystals = 0; u.crystals += r.amount; }
+        else if (r.type === 'box') { if (!u.inventory) u.inventory = []; u.inventory.push(r.boxType); }
+      }
+      count++;
+    }
+    saveDB(db);
+
+    const rewardDesc = rewards.map(r => r.type === 'coins' ? `🪙${r.amount}` : r.type === 'crystals' ? `💎${r.amount}` : `📦${r.boxType}`).join(', ');
+    socket.emit('admin_gift_result', { success: true, message: `Подарок выдан ${count} игрокам: ${rewardDesc}` });
+    // Уведомляем всех онлайн
+    io.emit('gift_received', { type: 'all', message: `🎁 Администратор раздал подарки всем игрокам: ${rewardDesc}!` });
+  });
+
+  // ==================== UPDATED PROMO (multi-reward) ====================
+  socket.on('admin_create_promo_v2', (data) => {
+    const { userId, code, rewards, maxUses } = data;
+    db = loadDB();
+    const user = db.users.find(u => u.id === userId);
+    if (!user || !user.isAdmin) return socket.emit('admin_promo_result', { success: false, message: 'Нет доступа' });
+
+    const exists = db.promoCodes.find(p => p.code.toLowerCase() === code.toLowerCase());
+    if (exists) return socket.emit('admin_promo_result', { success: false, message: 'Промокод уже существует' });
+
+    // rewards = массив: [{type:'coins',amount:100},{type:'box',boxType:'skin_box'},{type:'crystals',amount:50}]
+    const newPromo = {
+      id: uuidv4(),
+      code: code.toUpperCase(),
+      reward: 0, // legacy
+      rewards: rewards || [],
+      maxUses: parseInt(maxUses) || null,
+      usedCount: 0,
+      usedBy: [],
+      active: true,
+      createdAt: new Date().toISOString()
+    };
+    // Для обратной совместимости — если есть монеты, пишем в reward
+    const coinsReward = (rewards || []).find(r => r.type === 'coins');
+    if (coinsReward) newPromo.reward = coinsReward.amount;
+
+    db.promoCodes.push(newPromo);
+    saveDB(db);
+    socket.emit('admin_promo_result', { success: true, message: `Промокод ${newPromo.code} создан!`, promo: newPromo });
+  });
+
+  // Обновлённый use_promo с поддержкой multi-reward
+  socket.on('use_promo_v2', (data) => {
+    const { userId, code } = data;
+    db = loadDB();
+    const user = db.users.find(u => u.id === userId);
+    if (!user) return socket.emit('promo_result', { success: false, message: 'Пользователь не найден' });
+
+    const promo = db.promoCodes.find(p => p.code.toLowerCase() === code.toLowerCase());
+    if (!promo) return socket.emit('promo_result', { success: false, message: 'Промокод не найден' });
+    if (!promo.active) return socket.emit('promo_result', { success: false, message: 'Промокод деактивирован' });
+    if (promo.usedBy && promo.usedBy.includes(userId)) return socket.emit('promo_result', { success: false, message: 'Вы уже использовали этот промокод' });
+    if (promo.maxUses && promo.usedCount >= promo.maxUses) return socket.emit('promo_result', { success: false, message: 'Промокод исчерпан' });
+
+    const messages = [];
+    const rewardsList = promo.rewards && promo.rewards.length > 0 ? promo.rewards : [{ type: 'coins', amount: promo.reward || 0 }];
+
+    for (const r of rewardsList) {
+      if (r.type === 'coins') {
+        user.coins += r.amount || 0;
+        messages.push(`🪙 ${r.amount} монет`);
+      } else if (r.type === 'crystals') {
+        if (!user.crystals) user.crystals = 0;
+        user.crystals += r.amount || 0;
+        messages.push(`💎 ${r.amount} кристаллов`);
+      } else if (r.type === 'box') {
+        if (!user.inventory) user.inventory = [];
+        user.inventory.push(r.boxType);
+        const box = LOOT_BOXES[r.boxType];
+        messages.push(box ? `${box.emoji} ${box.name}` : `📦 Ящик`);
+      }
+    }
+
+    if (!promo.usedBy) promo.usedBy = [];
+    promo.usedBy.push(userId);
+    promo.usedCount = (promo.usedCount || 0) + 1;
+    if (promo.maxUses && promo.usedCount >= promo.maxUses) promo.active = false;
+
+    saveDB(db);
+    const safeUser = { ...user }; delete safeUser.password;
+    socket.emit('promo_result', { success: true, message: `Получено: ${messages.join(', ')}!`, user: safeUser });
   });
 
   // --- BOT GAME ---

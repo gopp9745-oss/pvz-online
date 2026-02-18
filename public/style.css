@@ -203,6 +203,91 @@ body { font-family: Arial, sans-serif; min-height: 100vh; }
 .empty-state { text-align: center; padding: 40px; color: #aaa; }
 .empty-state-icon { font-size: 48px; margin-bottom: 10px; }
 
+/* ===== SHOP GIFT BANNER ===== */
+.shop-gift-banner {
+  background: linear-gradient(135deg, #E65100, #FF6D00);
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: 12px;
+  margin-bottom: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  animation: giftPulse 2s ease-in-out infinite;
+  box-shadow: 0 4px 16px rgba(230,81,0,0.4);
+}
+@keyframes giftPulse {
+  0%,100% { transform: scale(1); box-shadow: 0 4px 16px rgba(230,81,0,0.4); }
+  50% { transform: scale(1.02); box-shadow: 0 6px 24px rgba(230,81,0,0.6); }
+}
+
+/* ===== GIFT CARDS ===== */
+.gift-card {
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  border: 2px solid #FFD700;
+  border-radius: 16px;
+  padding: 18px;
+  margin-bottom: 14px;
+  position: relative;
+  overflow: hidden;
+}
+.gift-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #FFD700, #FF6D00, #FFD700);
+}
+.gift-card.gift-claimed {
+  border-color: #4CAF50;
+  opacity: 0.8;
+}
+.gift-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.gift-card-icon { font-size: 32px; }
+.gift-card-info { flex: 1; }
+.gift-card-title { font-size: 16px; font-weight: 700; color: #FFD700; }
+.gift-card-desc { font-size: 13px; color: rgba(255,255,255,0.7); margin-top: 2px; }
+.gift-card-rewards {
+  background: rgba(255,215,0,0.1);
+  border: 1px solid rgba(255,215,0,0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: #FFD700;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.gift-card-timer {
+  font-size: 12px;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 10px;
+}
+.gift-card-btn {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  background: linear-gradient(135deg, #FFD700, #FF6D00);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  transition: opacity 0.2s;
+}
+.gift-card-btn:hover { opacity: 0.9; }
+.gift-btn-claimed {
+  background: linear-gradient(135deg, #2E7D32, #4CAF50);
+  cursor: default;
+}
+
 /* ===== GLORY PATH BANNER ===== */
 .glory-path-banner {
   display: flex; align-items: center; justify-content: space-between;

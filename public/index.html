@@ -270,6 +270,9 @@
         <div class="coins-display">🪙 <span id="shop-coins">0</span></div>
       </div>
 
+      <!-- Баннер подарка -->
+      <div id="shop-gift-banner" class="shop-gift-banner" style="display:none"></div>
+
       <!-- Таймер ротации -->
       <div id="shop-timer-display" class="shop-timer-bar"></div>
 
@@ -279,11 +282,28 @@
         <button class="tab-btn" onclick="filterShop('plant', this)">🌱 Растения</button>
         <button class="tab-btn" onclick="filterShop('zombie', this)">🧟 Зомби</button>
         <button class="tab-btn" onclick="filterShop('skin', this)">✨ Скины</button>
-        <button class="tab-btn shop-promo-tab" onclick="showShopPromo(this)">🎁 Промокоды</button>
+        <button class="tab-btn" id="shop-gifts-tab-btn" onclick="showShopGiftsTab()">🎁 Подарки</button>
+        <button class="tab-btn shop-promo-tab" onclick="showShopPromo(this)">🏷️ Промокоды</button>
       </div>
 
       <!-- Товары -->
       <div id="shop-items" class="shop-grid"></div>
+
+      <!-- Вкладка подарков/акций -->
+      <div id="shop-gifts-panel" style="display:none">
+        <div class="promo-card">
+          <div class="promo-card-header">
+            <span class="promo-card-icon">🎁</span>
+            <div>
+              <h3>Подарки от администратора</h3>
+              <p>Получите бесплатные награды — монеты, кристаллы и ящики!</p>
+            </div>
+          </div>
+          <div id="shop-gifts-list">
+            <div class="empty-state"><div class="empty-state-icon">🎁</div><p>Нет активных акций</p></div>
+          </div>
+        </div>
+      </div>
 
       <!-- Вкладка промокодов -->
       <div id="shop-promo-panel" style="display:none">
@@ -562,6 +582,20 @@
       <div class="modal-buttons">
         <button class="btn btn-primary" onclick="startBotGame()">▶️ Начать игру</button>
         <button class="btn btn-secondary" onclick="document.getElementById('modal-bot').style.display='none'">Отмена</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО: ОТКРЫТИЕ ЯЩИКА -->
+  <div id="modal-box" class="modal" style="display:none">
+    <div class="modal-content" style="background:#1a1a2e;color:#fff;max-width:420px;text-align:center;border:2px solid #FFD700">
+      <div style="font-size:48px;margin-bottom:8px">📦</div>
+      <h3 id="box-modal-title" style="color:#FFD700;margin-bottom:6px">Ящик</h3>
+      <p id="box-modal-desc" style="color:rgba(255,255,255,0.7);font-size:14px;margin-bottom:16px"></p>
+      <div id="box-modal-result" class="hidden"></div>
+      <div class="modal-buttons" style="justify-content:center;margin-top:16px">
+        <button id="box-open-btn" class="btn btn-success" style="font-size:16px;padding:12px 28px" onclick="doOpenBox()">🎲 Открыть!</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('modal-box').style.display='none'">Закрыть</button>
       </div>
     </div>
   </div>

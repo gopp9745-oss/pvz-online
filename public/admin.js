@@ -41,16 +41,6 @@ socket.on('admin_data', function(d) {
   updateStats();
 });
 
-function showAdminTab(tabId, btn) {
-  document.querySelectorAll('.admin-tab').forEach(function(t) {
-    t.style.display = 'none';
-  });
-  document.querySelectorAll('.admin-nav-btn').forEach(function(b) {
-    b.classList.remove('active');
-  });
-  document.getElementById(tabId).style.display = 'block';
-  btn.classList.add('active');
-}
 
 function renderUsers() {
   var users = adminData.users || [];
@@ -92,80 +82,87 @@ function filterUsers() {
 
 function renderPromos() {
   var promos = adminData.promoCodes || [];
+  var el = document.getElementById('promos-list');
+  if (!el) return;
   if (!promos.length) {
-    document.getElementById('promos-table-container').innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎁</div><p>Нет промокодов. Создайте первый!</p></div>';
+    el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">&#x1F381;</div><p>No promo codes. Create the first one!</p></div>';
     return;
   }
-  var html = '<table class="data-table"><thead><tr><th>Код</th><th>Награда</th><th>Использований</th><th>Макс.</th><th>Статус</th><th>Действия</th></tr></thead><tbody>';
+  var html = '<table class="data-table"><thead><tr><th>Code</th><th>Reward</th><th>Used</th><th>Max</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
   promos.forEach(function(p) {
+    var rewardStr = '';
+    if (p.rewards && p.rewards.length) {
+      rewardStr = p.rewards.map(function(r) {
+        if (r.type === 'coins') return '&#x1FA99; ' + r.amount;
+        if (r.type === 'crystals') return '&#x1F48E; ' + r.amount;
+        if (r.type === 'box') return '&#x1F4E6; ' + r.boxType;
+        return '?';
+      }).join(' + ');
+    } else {
+      rewardStr = '&#x1FA99; ' + (p.reward || 0);
+    }
     html += '<tr>';
     html += '<td><strong>' + p.code + '</strong></td>';
-    html += '<td>🪙 ' + p.reward + '</td>';
+    html += '<td>' + rewardStr + '</td>';
     html += '<td>' + (p.usedCount || 0) + '</td>';
-    html += '<td>' + (p.maxUses || '∞') + '</td>';
-    html += '<td><span class="badge ' + (p.active ? 'badge-active' : 'badge-inactive') + '">' + (p.active ? '✅ Активен' : '❌ Неактивен') + '</span></td>';
+    html += '<td>' + (p.maxUses || '&#x221E;') + '</td>';
+    html += '<td><span class="badge ' + (p.active ? 'badge-active' : 'badge-inactive') + '">' + (p.active ? '&#x2705; Active' : '&#x274C; Inactive') + '</span></td>';
     html += '<td><div class="action-btns">';
-    html += '<button class="btn btn-warning btn-sm" onclick="togglePromo(\'' + p.id + '\')">' + (p.active ? '⏸️ Деактивировать' : '▶️ Активировать') + '</button>';
-    html += '<button class="btn btn-danger btn-sm" onclick="deletePromo(\'' + p.id + '\')">🗑️ Удалить</button>';
+    html += '<button class="btn btn-warning btn-sm" onclick="togglePromo(\'' + p.id + '\')">' + (p.active ? 'Pause' : 'Resume') + '</button>';
+    html += '<button class="btn btn-danger btn-sm" onclick="deletePromo(\'' + p.id + '\')">&#x1F5D1; Delete</button>';
     html += '</div></td></tr>';
   });
   html += '</tbody></table>';
-  document.getElementById('promos-table-container').innerHTML = html;
+  el.innerHTML = html;
 }
 
 function renderShopItems() {
   var items = adminData.shopItems || [];
-  var html = '<table class="data-table"><thead><tr><th>Товар</th><th>Тип</th><th>Цена</th></tr></thead><tbody>';
+  var el = document.getElementById('shop-items-list');
+  if (!el) return;
+  if (!items.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-state-icon">&#x1F6D2;</div><p>No shop items</p></div>';
+    return;
+  }
+  var html = '<table class="data-table"><thead><tr><th>Item</th><th>Type</th><th>Rarity</th><th>Price</th></tr></thead><tbody>';
   items.forEach(function(item) {
-    html += '<tr><td>' + item.emoji + ' ' + item.name + '</td><td>' + item.type + '</td><td>🪙 ' + item.price + '</td></tr>';
+    html += '<tr><td>' + (item.emoji || '') + ' ' + item.name + '</td><td>' + item.type + '</td><td>' + (item.rarity || 'common') + '</td><td>&#x1FA99; ' + item.price + '</td></tr>';
   });
   html += '</tbody></table>';
-  document.getElementById('shop-table-container').innerHTML = html;
+  el.innerHTML = html;
 }
 
 function updateStats() {
+  // Stats elements may not exist in current HTML - skip gracefully
   var users = adminData.users || [];
   var promos = adminData.promoCodes || [];
-  document.getElementById('stat-users').textContent = users.length;
-  document.getElementById('stat-promos').textContent = promos.length;
-  document.getElementById('stat-total-wins').textContent = users.reduce(function(s, u) { return s + (u.wins || 0); }, 0);
-  document.getElementById('stat-total-coins').textContent = users.reduce(function(s, u) { return s + (u.coins || 0); }, 0);
-
-  var top = users.slice().sort(function(a, b) { return b.wins - a.wins; }).slice(0, 5);
-  var html = '';
-  top.forEach(function(u, i) {
-    var rank = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) + '.';
-    html += '<div class="top-player-item"><div class="top-player-rank">' + rank + '</div><div class="top-player-name">' + u.username + (u.isAdmin ? ' 👑' : '') + '</div><div class="top-player-stats">🏆 ' + u.wins + ' | 🪙 ' + u.coins + '</div></div>';
-  });
-  document.getElementById('top-players-list').innerHTML = html || '<p style="color:#aaa;padding:20px">Нет данных</p>';
+  var setEl = function(id, val) { var e = document.getElementById(id); if (e) e.textContent = val; };
+  setEl('stat-users', users.length);
+  setEl('stat-promos', promos.length);
+  setEl('stat-total-wins', users.reduce(function(s, u) { return s + (u.wins || 0); }, 0));
+  setEl('stat-total-coins', users.reduce(function(s, u) { return s + (u.coins || 0); }, 0));
+  var topEl = document.getElementById('top-players-list');
+  if (topEl) {
+    var top = users.slice().sort(function(a, b) { return b.wins - a.wins; }).slice(0, 5);
+    var html = '';
+    top.forEach(function(u, i) {
+      var rank = i === 0 ? '&#x1F947;' : i === 1 ? '&#x1F948;' : i === 2 ? '&#x1F949;' : (i + 1) + '.';
+      html += '<div class="top-player-item"><div class="top-player-rank">' + rank + '</div><div class="top-player-name">' + u.username + (u.isAdmin ? ' &#x1F451;' : '') + '</div><div class="top-player-stats">&#x1F3C6; ' + u.wins + ' | &#x1FA99; ' + u.coins + '</div></div>';
+    });
+    topEl.innerHTML = html || '<p style="color:#aaa;padding:20px">No data</p>';
+  }
 }
 
 function createPromo() {
-  var code = document.getElementById('new-promo-code').value.trim().toUpperCase();
-  var reward = parseInt(document.getElementById('new-promo-reward').value) || 100;
-  var maxUses = parseInt(document.getElementById('new-promo-maxuses').value) || 0;
-  var res = document.getElementById('promo-create-result');
-
-  if (!code) {
-    res.style.display = 'block';
-    res.className = 'error-msg';
-    res.textContent = 'Введите код промокода';
-    return;
-  }
-
+  var code = document.getElementById('promo-code').value.trim().toUpperCase();
+  var reward = parseInt(document.getElementById('promo-reward').value) || 100;
+  var maxUses = parseInt(document.getElementById('promo-uses').value) || 0;
+  if (!code) { showToast('Enter promo code!', 'error'); return; }
   socket.emit('admin_create_promo', { userId: currentAdmin.id, code: code, reward: reward, maxUses: maxUses });
 }
 
-socket.on('admin_promo_result', function(d) {
-  var res = document.getElementById('promo-create-result');
-  res.style.display = 'block';
-  res.className = d.success ? 'success-msg' : 'error-msg';
-  res.textContent = d.message;
-  if (d.success) {
-    document.getElementById('new-promo-code').value = '';
-    loadAdminData();
-  }
-  setTimeout(function() { res.style.display = 'none'; }, 4000);
+socket.on('admin_promo_result_legacy', function(d) {
+  // legacy handler - replaced by new one below
 });
 
 socket.on('admin_action_result', function(d) {
@@ -281,3 +278,250 @@ function revokeModerator(targetId, username) {
   if (!confirm('Revoke moderator rights from ' + username + '?')) return;
   socket.emit('admin_revoke_moderator', { userId: currentAdmin.id, targetId: targetId });
 }
+
+// ==================== GIFTS / SALES ====================
+var sgRewards = [];
+var pv2Rewards = [];
+
+function showAdminTab(tabId, btn) {
+  document.querySelectorAll('.admin-tab').forEach(function(t) { t.style.display = 'none'; });
+  document.querySelectorAll('.admin-nav-btn').forEach(function(b) { b.classList.remove('active'); });
+  var tab = document.getElementById(tabId);
+  if (tab) tab.style.display = 'block';
+  if (btn) btn.classList.add('active');
+  if (tabId === 'tab-gifts') loadGifts();
+  if (tabId === 'tab-crystals') loadCrystalsTab();
+}
+
+function loadGifts() {
+  socket.emit('get_shop_gifts');
+}
+
+socket.on('shop_gifts_data', function(gifts) {
+  var el = document.getElementById('admin-gifts-list');
+  if (!el) return;
+  if (!gifts || !gifts.length) {
+    el.innerHTML = '<div class="loading">No active gifts</div>';
+    return;
+  }
+  var html = '<table class="data-table"><thead><tr><th>Title</th><th>Rewards</th><th>Claimed</th><th>Expires</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+  gifts.forEach(function(g) {
+    var rewardDesc = (g.rewards || []).map(function(r) {
+      if (r.type === 'coins') return '🪙' + r.amount;
+      if (r.type === 'crystals') return '💎' + r.amount;
+      if (r.type === 'box') return '📦' + r.boxType;
+      return '?';
+    }).join(' + ');
+    var expires = g.expiresAt ? new Date(g.expiresAt).toLocaleString() : 'Forever';
+    var status = g.active ? '<span class="badge-active">Active</span>' : '<span class="badge-inactive">Inactive</span>';
+    html += '<tr>';
+    html += '<td>' + g.title + '</td>';
+    html += '<td>' + rewardDesc + '</td>';
+    html += '<td>' + (g.claimedCount || 0) + '</td>';
+    html += '<td>' + expires + '</td>';
+    html += '<td>' + status + '</td>';
+    html += '<td><div class="action-btns">';
+    html += '<button class="btn btn-warning btn-sm" onclick="toggleShopGift(\'' + g.id + '\')">' + (g.active ? 'Pause' : 'Resume') + '</button>';
+    html += '<button class="btn btn-danger btn-sm" onclick="deleteShopGift(\'' + g.id + '\')">Delete</button>';
+    html += '</div></td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+});
+
+function updateGiftAllFields() {
+  var type = document.getElementById('gift-all-type').value;
+  document.getElementById('gift-all-amount-wrap').style.display = (type === 'box') ? 'none' : 'block';
+  document.getElementById('gift-all-box-wrap').style.display = (type === 'box') ? 'block' : 'none';
+}
+
+function giftAll() {
+  if (!currentAdmin) return;
+  var type = document.getElementById('gift-all-type').value;
+  var rewards = [];
+  if (type === 'coins') {
+    var amount = parseInt(document.getElementById('gift-all-amount').value) || 100;
+    rewards = [{ type: 'coins', amount: amount }];
+  } else if (type === 'crystals') {
+    var amount = parseInt(document.getElementById('gift-all-amount').value) || 50;
+    rewards = [{ type: 'crystals', amount: amount }];
+  } else if (type === 'box') {
+    var boxType = document.getElementById('gift-all-box').value;
+    rewards = [{ type: 'box', boxType: boxType }];
+  }
+  if (!rewards.length) { showToast('Select reward type!', 'error'); return; }
+  if (!confirm('Gift ' + JSON.stringify(rewards) + ' to ALL players?')) return;
+  socket.emit('admin_gift_all', { userId: currentAdmin.id, rewards: rewards });
+}
+
+socket.on('admin_gift_result', function(d) {
+  showToast(d.message, d.success ? 'success' : 'error');
+  var els = ['gift-all-result', 'sg-result', 'crystal-result', 'pv2-result'];
+  els.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el && el.style.display !== 'none') {
+      el.className = d.success ? 'success-msg' : 'error-msg';
+      el.textContent = d.message;
+      el.style.display = 'block';
+    }
+  });
+  if (d.success) loadGifts();
+});
+
+// Shop Gift rewards builder
+function addGiftReward(type) {
+  var id = 'sg-r-' + Date.now();
+  var html = '<div id="' + id + '" style="display:flex;gap:8px;align-items:center;background:rgba(255,255,255,0.05);padding:8px;border-radius:8px">';
+  html += '<span style="color:#aaa;font-size:13px">' + (type === 'coins' ? '🪙 Coins:' : type === 'crystals' ? '💎 Crystals:' : '📦 Box:') + '</span>';
+  if (type === 'box') {
+    html += '<select class="input-field" id="' + id + '-box" style="flex:1"><option value="skin_box">🎁 Skin Box</option><option value="plant_box">🌱 Plant Box</option><option value="crystal_box">💎 Crystal Box</option></select>';
+  } else {
+    html += '<input type="number" class="input-field" id="' + id + '-amt" value="100" min="1" style="flex:1">';
+  }
+  html += '<button class="btn btn-danger btn-sm" onclick="document.getElementById(\'' + id + '\').remove()">✕</button>';
+  html += '</div>';
+  document.getElementById('sg-rewards-list').insertAdjacentHTML('beforeend', html);
+}
+
+function createShopGift() {
+  if (!currentAdmin) return;
+  var title = document.getElementById('sg-title').value.trim();
+  var desc = document.getElementById('sg-desc').value.trim();
+  var duration = parseInt(document.getElementById('sg-duration').value) || 0;
+  if (!title) { showToast('Enter a title!', 'error'); return; }
+
+  var rewards = [];
+  document.querySelectorAll('#sg-rewards-list > div').forEach(function(row) {
+    var id = row.id;
+    var boxSel = document.getElementById(id + '-box');
+    var amtInp = document.getElementById(id + '-amt');
+    if (boxSel) {
+      rewards.push({ type: 'box', boxType: boxSel.value });
+    } else if (amtInp) {
+      var label = row.querySelector('span').textContent;
+      var type = label.includes('Coins') ? 'coins' : 'crystals';
+      rewards.push({ type: type, amount: parseInt(amtInp.value) || 100 });
+    }
+  });
+
+  if (!rewards.length) { showToast('Add at least one reward!', 'error'); return; }
+
+  socket.emit('admin_create_shop_gift', {
+    userId: currentAdmin.id,
+    title: title,
+    description: desc,
+    rewards: rewards,
+    durationMinutes: duration > 0 ? duration : null
+  });
+}
+
+function toggleShopGift(giftId) {
+  socket.emit('admin_toggle_shop_gift', { userId: currentAdmin.id, giftId: giftId });
+}
+
+function deleteShopGift(giftId) {
+  if (!confirm('Delete this gift?')) return;
+  socket.emit('admin_delete_shop_gift', { userId: currentAdmin.id, giftId: giftId });
+}
+
+// ==================== CRYSTALS ====================
+function loadCrystalsTab() {
+  if (!adminData) return;
+  // Заполняем select игроков
+  var sel = document.getElementById('crystal-target');
+  if (sel) {
+    sel.innerHTML = '<option value="">Select player...</option>';
+    (adminData.users || []).forEach(function(u) {
+      var opt = document.createElement('option');
+      opt.value = u.id;
+      opt.textContent = u.username + ' (💎' + (u.crystals || 0) + ')';
+      sel.appendChild(opt);
+    });
+  }
+  // Таблица кристаллов
+  var tbl = document.getElementById('crystals-table');
+  if (tbl) {
+    var sorted = (adminData.users || []).slice().sort(function(a, b) { return (b.crystals || 0) - (a.crystals || 0); });
+    var html = '<table class="data-table"><thead><tr><th>#</th><th>Player</th><th>💎 Crystals</th><th>🪙 Coins</th><th>Actions</th></tr></thead><tbody>';
+    sorted.forEach(function(u, i) {
+      html += '<tr><td>' + (i + 1) + '</td><td>' + u.username + (u.isAdmin ? ' 👑' : '') + '</td>';
+      html += '<td style="color:#64B5F6;font-weight:700">💎 ' + (u.crystals || 0) + '</td>';
+      html += '<td>🪙 ' + (u.coins || 0) + '</td>';
+      html += '<td><button class="btn btn-info btn-sm" onclick="quickGiveCrystals(\'' + u.id + '\',\'' + u.username + '\')">+ Crystals</button></td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    tbl.innerHTML = html;
+  }
+}
+
+function giveCrystals() {
+  if (!currentAdmin) return;
+  var targetId = document.getElementById('crystal-target').value;
+  var amount = parseInt(document.getElementById('crystal-amount').value) || 50;
+  if (!targetId) { showToast('Select a player!', 'error'); return; }
+  socket.emit('admin_give_crystals', { userId: currentAdmin.id, targetId: targetId, amount: amount });
+}
+
+function quickGiveCrystals(targetId, username) {
+  var amount = parseInt(prompt('Give crystals to ' + username + ':', '50'));
+  if (!amount || amount <= 0) return;
+  socket.emit('admin_give_crystals', { userId: currentAdmin.id, targetId: targetId, amount: amount });
+}
+
+// ==================== PROMOS V2 ====================
+function addPromoReward(type) {
+  var id = 'pv2-r-' + Date.now();
+  var html = '<div id="' + id + '" style="display:flex;gap:8px;align-items:center;background:rgba(255,255,255,0.05);padding:8px;border-radius:8px">';
+  html += '<span style="color:#aaa;font-size:13px">' + (type === 'coins' ? '🪙 Coins:' : type === 'crystals' ? '💎 Crystals:' : '📦 Box:') + '</span>';
+  if (type === 'box') {
+    html += '<select class="input-field" id="' + id + '-box" style="flex:1"><option value="skin_box">🎁 Skin Box</option><option value="plant_box">🌱 Plant Box</option><option value="crystal_box">💎 Crystal Box</option></select>';
+  } else {
+    html += '<input type="number" class="input-field" id="' + id + '-amt" value="100" min="1" style="flex:1">';
+  }
+  html += '<button class="btn btn-danger btn-sm" onclick="document.getElementById(\'' + id + '\').remove()">✕</button>';
+  html += '</div>';
+  document.getElementById('pv2-rewards-list').insertAdjacentHTML('beforeend', html);
+}
+
+function createPromoV2() {
+  if (!currentAdmin) return;
+  var code = document.getElementById('pv2-code').value.trim().toUpperCase();
+  var maxUses = parseInt(document.getElementById('pv2-uses').value) || 0;
+  if (!code) { showToast('Enter a promo code!', 'error'); return; }
+
+  var rewards = [];
+  document.querySelectorAll('#pv2-rewards-list > div').forEach(function(row) {
+    var id = row.id;
+    var boxSel = document.getElementById(id + '-box');
+    var amtInp = document.getElementById(id + '-amt');
+    if (boxSel) {
+      rewards.push({ type: 'box', boxType: boxSel.value });
+    } else if (amtInp) {
+      var label = row.querySelector('span').textContent;
+      var type = label.includes('Coins') ? 'coins' : 'crystals';
+      rewards.push({ type: type, amount: parseInt(amtInp.value) || 100 });
+    }
+  });
+
+  if (!rewards.length) { showToast('Add at least one reward!', 'error'); return; }
+
+  socket.emit('admin_create_promo_v2', {
+    userId: currentAdmin.id,
+    code: code,
+    rewards: rewards,
+    maxUses: maxUses > 0 ? maxUses : null
+  });
+}
+
+socket.on('admin_promo_result', function(d) {
+  showToast(d.message, d.success ? 'success' : 'error');
+  var el = document.getElementById('pv2-result');
+  if (el) {
+    el.className = d.success ? 'success-msg' : 'error-msg';
+    el.textContent = d.message;
+    el.style.display = 'block';
+  }
+  if (d.success) loadAdminData();
+});

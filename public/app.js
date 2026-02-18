@@ -381,7 +381,8 @@ function usePromo() {
   if (!currentUser) { showToast('Войдите в аккаунт', 'error'); return; }
   var code = document.getElementById('promo-input').value.trim();
   if (!code) { showToast('Введите промокод', 'error'); return; }
-  socket.emit('use_promo', { userId: currentUser.id, code: code });
+  // Используем v2 (поддержка мульти-наград)
+  socket.emit('use_promo_v2', { userId: currentUser.id, code: code });
 }
 
 socket.on('promo_result', function(d) {
@@ -395,12 +396,204 @@ socket.on('promo_result', function(d) {
     res.className = 'success-msg';
     res.textContent = d.message;
     document.getElementById('promo-input').value = '';
+    // Обновляем инвентарь если открыт
+    var invScreen = document.getElementById('screen-inventory');
+    if (invScreen && invScreen.classList.contains('active')) {
+      document.getElementById('inv-coins').textContent = currentUser.coins;
+      renderInventory('all');
+    }
   } else {
     res.className = 'error-msg';
     res.textContent = d.message;
   }
   setTimeout(function() { res.classList.add('hidden'); }, 3000);
 });
+
+// ===== CRYSTALS =====
+function updateCrystalsDisplay() {
+  var els = document.querySelectorAll('.menu-crystals');
+  els.forEach(function(el) { el.textContent = currentUser ? (currentUser.crystals || 0) : 0; });
+}
+
+// ===== LOOT BOXES =====
+var activeBoxType = null;
+
+function openBoxModal(boxType) {
+  if (!currentUser) { showToast('Войдите в аккаунт', 'error'); return; }
+  var inv = currentUser.inventory || [];
+  if (!inv.includes(boxType)) { showToast('У вас нет этого ящика!', 'error'); return; }
+  activeBoxType = boxType;
+  var names = { skin_box: '🎁 Ящик скинов', plant_box: '🌱 Ящик растений', crystal_box: '💎 Ящик кристаллов' };
+  var descs = { skin_box: 'Случайный скин любой редкости', plant_box: 'Случайное растение любой редкости', crystal_box: 'От 10 до 100 кристаллов' };
+  document.getElementById('box-modal-title').textContent = names[boxType] || 'Ящик';
+  document.getElementById('box-modal-desc').textContent = descs[boxType] || '';
+  document.getElementById('box-modal-result').innerHTML = '';
+  document.getElementById('box-modal-result').className = 'hidden';
+  document.getElementById('box-open-btn').style.display = 'inline-block';
+  document.getElementById('modal-box').style.display = 'flex';
+}
+
+function doOpenBox() {
+  if (!currentUser || !activeBoxType) return;
+  socket.emit('open_loot_box', { userId: currentUser.id, boxType: activeBoxType });
+  document.getElementById('box-open-btn').style.display = 'none';
+  document.getElementById('box-modal-result').innerHTML = '<div style="text-align:center;padding:20px;font-size:32px">🎲 Открываем...</div>';
+  document.getElementById('box-modal-result').className = '';
+}
+
+socket.on('box_result', function(d) {
+  if (d.success) {
+    currentUser = d.user;
+    localStorage.setItem('pvz_user', JSON.stringify(d.user));
+    updateUserPanel();
+    updateCrystalsDisplay();
+    var res = document.getElementById('box-modal-result');
+    var r = d.reward;
+    var html = '<div style="text-align:center;padding:20px">';
+    html += '<div style="font-size:64px;margin-bottom:12px">' + (r.type === 'skin' ? r.item.emoji : r.type === 'plant' ? r.item.emoji : r.type === 'crystals' ? '💎' : '🪙') + '</div>';
+    html += '<div style="font-size:18px;font-weight:700;color:#4CAF50;margin-bottom:8px">' + r.message + '</div>';
+    if (r.type === 'skin' || r.type === 'plant') {
+      var rarityColors = { common: '#9E9E9E', rare: '#2196F3', epic: '#9C27B0', legendary: '#FF9800' };
+      html += '<div style="display:inline-block;padding:4px 12px;border-radius:20px;background:' + (rarityColors[r.item.rarity] || '#9E9E9E') + ';color:#fff;font-size:13px">' + r.item.rarity + '</div>';
+    }
+    html += '</div>';
+    res.innerHTML = html;
+    res.className = '';
+    showToast(r.message, 'success');
+    // Обновляем инвентарь
+    socket.emit('get_all_items');
+  } else {
+    showToast(d.message, 'error');
+    document.getElementById('modal-box').style.display = 'none';
+  }
+});
+
+// ===== SHOP GIFTS =====
+var shopGiftsData = [];
+
+function loadShopGifts() {
+  socket.emit('get_shop_gifts');
+}
+
+socket.on('shop_gifts_data', function(gifts) {
+  shopGiftsData = gifts;
+  renderShopGiftsBanner();
+  renderShopGiftsPanel();
+});
+
+socket.on('new_shop_gift', function(gift) {
+  shopGiftsData.push(gift);
+  renderShopGiftsBanner();
+  renderShopGiftsPanel();
+  showToast('🎁 Новый подарок в магазине: ' + gift.title + '!', 'success');
+});
+
+socket.on('shop_gifts_updated', function() {
+  socket.emit('get_shop_gifts');
+});
+
+socket.on('gift_received', function(d) {
+  showToast(d.message, 'success');
+  if (currentUser) socket.emit('get_fresh_user', { userId: currentUser.id });
+});
+
+function renderShopGiftsBanner() {
+  var banner = document.getElementById('shop-gift-banner');
+  if (!banner) return;
+  var now = Date.now();
+  var active = shopGiftsData.filter(function(g) { return g.active && (!g.expiresAt || g.expiresAt > now); });
+  if (active.length > 0) {
+    banner.style.display = 'block';
+    banner.innerHTML = '🎁 <strong>ПОДАРОК!</strong> В магазине ' + active.length + ' активн' + (active.length === 1 ? 'ая акция' : 'ых акции') + ' — нажмите чтобы получить!';
+    banner.onclick = function() { showShopGiftsTab(); };
+  } else {
+    banner.style.display = 'none';
+  }
+  // Также обновляем кнопку в меню
+  var menuGiftBtn = document.getElementById('menu-gift-btn');
+  if (menuGiftBtn) {
+    if (active.length > 0) menuGiftBtn.classList.remove('hidden');
+    else menuGiftBtn.classList.add('hidden');
+  }
+}
+
+function renderShopGiftsPanel() {
+  var panel = document.getElementById('shop-gifts-list');
+  if (!panel) return;
+  var now = Date.now();
+  var active = shopGiftsData.filter(function(g) { return g.active && (!g.expiresAt || g.expiresAt > now); });
+  if (!active.length) {
+    panel.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎁</div><p>Нет активных акций</p></div>';
+    return;
+  }
+  var html = '';
+  active.forEach(function(g) {
+    var claimed = currentUser && g.claimedBy && g.claimedBy.includes(currentUser.id);
+    var timeLeft = '';
+    if (g.expiresAt) {
+      var left = Math.max(0, g.expiresAt - now);
+      var mins = Math.floor(left / 60000);
+      var hours = Math.floor(mins / 60);
+      var days = Math.floor(hours / 24);
+      if (days > 0) timeLeft = days + 'д ' + (hours % 24) + 'ч';
+      else if (hours > 0) timeLeft = hours + 'ч ' + (mins % 60) + 'мин';
+      else timeLeft = mins + ' мин';
+    }
+    var rewardDesc = (g.rewards || []).map(function(r) {
+      if (r.type === 'coins') return '🪙 ' + r.amount + ' монет';
+      if (r.type === 'crystals') return '💎 ' + r.amount + ' кристаллов';
+      if (r.type === 'box') {
+        var names = { skin_box: '🎁 Ящик скинов', plant_box: '🌱 Ящик растений', crystal_box: '💎 Ящик кристаллов' };
+        return names[r.boxType] || '📦 Ящик';
+      }
+      return '🎁 Предмет';
+    }).join(' + ');
+    html += '<div class="gift-card' + (claimed ? ' gift-claimed' : '') + '">';
+    html += '<div class="gift-card-header"><span class="gift-card-icon">🎁</span><div class="gift-card-info"><div class="gift-card-title">' + g.title + '</div>';
+    if (g.description) html += '<div class="gift-card-desc">' + g.description + '</div>';
+    html += '</div></div>';
+    html += '<div class="gift-card-rewards">' + rewardDesc + '</div>';
+    if (timeLeft) html += '<div class="gift-card-timer">⏰ Осталось: ' + timeLeft + '</div>';
+    if (claimed) {
+      html += '<div class="gift-card-btn gift-btn-claimed">✅ Получено</div>';
+    } else {
+      html += '<button class="gift-card-btn" onclick="claimGift(\'' + g.id + '\')">🎁 Получить!</button>';
+    }
+    html += '</div>';
+  });
+  panel.innerHTML = html;
+}
+
+function claimGift(giftId) {
+  if (!currentUser) { showToast('Войдите в аккаунт', 'error'); return; }
+  socket.emit('claim_shop_gift', { userId: currentUser.id, giftId: giftId });
+}
+
+socket.on('gift_claim_result', function(d) {
+  if (d.success) {
+    currentUser = d.user;
+    localStorage.setItem('pvz_user', JSON.stringify(d.user));
+    updateUserPanel();
+    updateCrystalsDisplay();
+    document.getElementById('shop-coins').textContent = currentUser.coins;
+    showToast(d.message, 'success');
+    socket.emit('get_shop_gifts');
+    socket.emit('get_all_items');
+  } else {
+    showToast(d.message, 'error');
+  }
+});
+
+function showShopGiftsTab() {
+  document.getElementById('shop-promo-panel').style.display = 'none';
+  document.getElementById('shop-items').style.display = 'none';
+  var giftsPanel = document.getElementById('shop-gifts-panel');
+  if (giftsPanel) giftsPanel.style.display = 'block';
+  document.querySelectorAll('#screen-shop .shop-tabs .tab-btn').forEach(function(b) { b.classList.remove('active'); });
+  var giftsTab = document.getElementById('shop-gifts-tab-btn');
+  if (giftsTab) giftsTab.classList.add('active');
+  socket.emit('get_shop_gifts');
+}
 
 // ===== MATCHMAKING + AUTOBOT =====
 var searchTimer = null;
