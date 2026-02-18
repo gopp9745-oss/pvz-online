@@ -654,7 +654,9 @@
   <script>
   // ===== COMMUNITY EVENT PANEL =====
   var eventPanelOpen = false;
-  var eventEndTime = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 дней
+  // Берём endsAt из localStorage (сохраняется при получении данных с сервера)
+  var savedEndsAt = localStorage.getItem('pvz_release_event_endsAt');
+  var eventEndTime = savedEndsAt ? parseInt(savedEndsAt) : (Date.now() + 7 * 24 * 60 * 60 * 1000);
 
   function toggleEventPanel() {
     eventPanelOpen = !eventPanelOpen;
@@ -684,22 +686,34 @@
   updateEventTimer();
 
   // Обновляем прогресс из событий сервера
-  if (typeof socket !== 'undefined') {
-    socket.on('events_data', function(events) {
-      var releaseEvent = events && events.find(function(e) { return e.name && e.name.includes('Релиз'); });
-      if (releaseEvent) {
-        var pct = Math.min(100, Math.round((releaseEvent.currentWins || 0) / (releaseEvent.targetWins || 100) * 100));
-        var fill = document.getElementById('cev-progress-fill');
-        var cnt = document.getElementById('cev-wins-count');
-        if (fill) fill.style.width = pct + '%';
-        if (cnt) cnt.textContent = (releaseEvent.currentWins || 0) + ' / ' + (releaseEvent.targetWins || 100);
-        // Разблокируем награды
-        if (pct >= 25) { var r1 = document.getElementById('cev-r1'); if(r1) r1.textContent = '✅'; }
-        if (pct >= 50) { var r2 = document.getElementById('cev-r2'); if(r2) r2.textContent = '✅'; }
-        if (pct >= 75) { var r3 = document.getElementById('cev-r3'); if(r3) r3.textContent = '✅'; }
-        if (pct >= 100) { var r4 = document.getElementById('cev-r4'); if(r4) r4.textContent = '✅'; }
+  function applyEventData(events) {
+    var releaseEvent = events && events.find(function(e) { return e.name && e.name.includes('Релиз'); });
+    if (releaseEvent) {
+      // Сохраняем endsAt с сервера — один раз, не перезаписываем если уже есть
+      if (releaseEvent.endsAt) {
+        var stored = localStorage.getItem('pvz_release_event_endsAt');
+        // Обновляем только если значение с сервера отличается (или ещё не сохранено)
+        if (!stored || Math.abs(parseInt(stored) - releaseEvent.endsAt) > 60000) {
+          localStorage.setItem('pvz_release_event_endsAt', String(releaseEvent.endsAt));
+          eventEndTime = releaseEvent.endsAt;
+          updateEventTimer();
+        }
       }
-    });
+      var pct = Math.min(100, Math.round((releaseEvent.currentWins || 0) / (releaseEvent.targetWins || 100) * 100));
+      var fill = document.getElementById('cev-progress-fill');
+      var cnt = document.getElementById('cev-wins-count');
+      if (fill) fill.style.width = pct + '%';
+      if (cnt) cnt.textContent = (releaseEvent.currentWins || 0) + ' / ' + (releaseEvent.targetWins || 100);
+      // Разблокируем награды
+      if (pct >= 25) { var r1 = document.getElementById('cev-r1'); if(r1) r1.textContent = '✅'; }
+      if (pct >= 50) { var r2 = document.getElementById('cev-r2'); if(r2) r2.textContent = '✅'; }
+      if (pct >= 75) { var r3 = document.getElementById('cev-r3'); if(r3) r3.textContent = '✅'; }
+      if (pct >= 100) { var r4 = document.getElementById('cev-r4'); if(r4) r4.textContent = '✅'; }
+    }
+  }
+
+  if (typeof socket !== 'undefined') {
+    socket.on('events_data', applyEventData);
     // Запрашиваем события при загрузке
     setTimeout(function() { socket.emit('get_events'); }, 1000);
   }
