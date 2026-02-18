@@ -1040,6 +1040,10 @@ function renderRewardsPath() {
   var lvDisp = document.getElementById('rp-level-display');
   if (lvDisp) lvDisp.textContent = '⭐ Ур. ' + curLevel;
 
+  // Обновляем заголовок страницы
+  var pageH2 = document.querySelector('#screen-rewards-path .page-header h2');
+  if (pageH2) pageH2.textContent = '🏆 Путь к славе';
+
   var typeColors = { coins: '#FFD700', plant: '#4CAF50', skin: '#9C27B0', legendary: '#FF9800' };
   var typeLabels = { coins: 'Монеты', plant: 'Растение', skin: 'Скин', legendary: 'Легендарный' };
 
@@ -1058,44 +1062,38 @@ function renderRewardsPath() {
   // Легенда
   html += '<div class="rp-legend">';
   html += '<div class="rp-legend-item"><div class="rp-legend-dot" style="background:#4CAF50"></div>Получено</div>';
-  html += '<div class="rp-legend-item"><div class="rp-legend-dot" style="background:#FFD700"></div>Текущий уровень</div>';
-  html += '<div class="rp-legend-item"><div class="rp-legend-dot" style="background:rgba(255,255,255,0.2)"></div>Заблокировано</div>';
+  html += '<div class="rp-legend-item"><div class="rp-legend-dot" style="background:#FFD700"></div>Доступно сейчас</div>';
+  html += '<div class="rp-legend-item"><div class="rp-legend-dot" style="background:rgba(255,255,255,0.2)"></div>Недоступно</div>';
   html += '</div>';
 
   // Трек наград
   html += '<div class="rp-track">';
 
-  // Стартовый узел
+  // Начальный узел
   html += '<div class="rp-node rp-claimed">';
   html += '<div class="rp-node-level">1</div>';
-  html += '<div class="rp-node-emoji">🌱</div>';
-  html += '<div class="rp-node-info"><div class="rp-node-title">Начало пути</div><div class="rp-node-sub">Добро пожаловать в игру!</div></div>';
+  html += '<div class="rp-node-emoji">🎮</div>';
+  html += '<div class="rp-node-info"><div class="rp-node-title">Начало пути к славе</div><div class="rp-node-sub">Добро пожаловать в игру!</div></div>';
   html += '<div class="rp-node-status rp-status-claimed">✅ Получено</div>';
   html += '</div>';
 
   ALL_LEVEL_REWARDS.forEach(function(r, idx) {
-    var prevLevel = idx === 0 ? 1 : ALL_LEVEL_REWARDS[idx - 1].level;
+    // isClaimed = уровень уже пройден (награда должна быть выдана)
     var isClaimed = curLevel > r.level;
-    var isCurrent = curLevel === r.level || (curLevel > prevLevel && curLevel < r.level && idx === 0);
-    var isNext = !isClaimed && !isCurrent;
+    // isCurrent = награда доступна прямо сейчас (уровень достигнут)
+    var isCurrent = curLevel >= r.level && !isClaimed;
+    // isLocked = уровень ещё не достигнут
+    var isLocked = curLevel < r.level;
 
     // Коннектор
-    var connDone = curLevel >= r.level;
-    html += '<div class="rp-connector' + (connDone ? ' done' : '') + '"></div>';
+    html += '<div class="rp-connector' + (isClaimed ? ' done' : '') + '"></div>';
 
-    // Узел
-    var nodeClass = isClaimed ? 'rp-claimed' : (curLevel >= prevLevel && curLevel < r.level ? 'rp-current' : 'rp-locked');
-    // Подсвечиваем следующую награду
-    if (!isClaimed && idx > 0 && curLevel >= ALL_LEVEL_REWARDS[idx-1].level && curLevel < r.level) {
-      nodeClass = 'rp-current';
-    }
-    if (idx === 0 && curLevel < r.level) nodeClass = 'rp-current';
-
+    var nodeClass = isClaimed ? 'rp-claimed' : (isCurrent ? 'rp-current' : 'rp-locked');
     var color = typeColors[r.type] || '#fff';
     var typeLabel = typeLabels[r.type] || r.type;
 
     html += '<div class="rp-node ' + nodeClass + '">';
-    html += '<div class="rp-node-level" style="' + (isClaimed ? 'background:rgba(76,175,80,0.3);color:#81C784' : '') + '">' + r.level + '</div>';
+    html += '<div class="rp-node-level" style="' + (isClaimed ? 'background:rgba(76,175,80,0.3);color:#81C784' : isCurrent ? 'background:rgba(255,215,0,0.3);color:#FFD700' : '') + '">' + r.level + '</div>';
     html += '<div class="rp-node-emoji">' + r.emoji + '</div>';
     html += '<div class="rp-node-info">';
     html += '<div class="rp-node-title">' + r.label + '</div>';
@@ -1103,8 +1101,8 @@ function renderRewardsPath() {
     html += '</div>';
     if (isClaimed) {
       html += '<div class="rp-node-status rp-status-claimed">✅ Получено</div>';
-    } else if (nodeClass === 'rp-current') {
-      html += '<div class="rp-node-status rp-status-current">🎯 Следующая</div>';
+    } else if (isCurrent) {
+      html += '<div class="rp-node-status rp-status-current">🎁 Выдано!</div>';
     } else {
       html += '<div class="rp-node-status rp-status-locked">🔒 Ур. ' + r.level + '</div>';
     }
