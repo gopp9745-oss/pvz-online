@@ -203,6 +203,35 @@ body { font-family: Arial, sans-serif; min-height: 100vh; }
 .empty-state { text-align: center; padding: 40px; color: #aaa; }
 .empty-state-icon { font-size: 48px; margin-bottom: 10px; }
 
+/* ===== GLORY PATH BANNER ===== */
+.glory-path-banner {
+  display: flex; align-items: center; justify-content: space-between;
+  background: linear-gradient(135deg, rgba(255,215,0,0.12), rgba(255,152,0,0.18));
+  border: 1px solid rgba(255,215,0,0.35);
+  border-radius: 16px; padding: 10px 14px;
+  margin-bottom: 10px; cursor: pointer;
+  transition: all 0.2s; gap: 10px;
+  width: 100%; max-width: 420px;
+  box-shadow: 0 2px 12px rgba(255,215,0,0.1);
+}
+.glory-path-banner:hover {
+  background: linear-gradient(135deg, rgba(255,215,0,0.22), rgba(255,152,0,0.28));
+  border-color: rgba(255,215,0,0.6);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(255,215,0,0.2);
+}
+.glory-path-left { display: flex; align-items: center; gap: 10px; }
+.glory-path-icon { font-size: 26px; line-height: 1; }
+.glory-path-info { display: flex; flex-direction: column; gap: 1px; }
+.glory-path-title { font-size: 12px; font-weight: 800; color: #FFD700; letter-spacing: 0.5px; text-transform: uppercase; }
+.glory-path-sub { font-size: 11px; color: rgba(255,255,255,0.65); }
+.glory-path-right { display: flex; align-items: center; gap: 8px; flex: 1; justify-content: flex-end; }
+.glory-path-xp-wrap { display: flex; flex-direction: column; gap: 3px; min-width: 90px; flex: 1; max-width: 150px; }
+.glory-path-xp-bar { height: 5px; background: rgba(255,255,255,0.12); border-radius: 3px; overflow: hidden; }
+.glory-path-xp-fill { height: 100%; background: linear-gradient(90deg, #FFD700, #FF9800); border-radius: 3px; transition: width 0.5s ease; }
+.glory-path-xp-label { font-size: 10px; color: rgba(255,255,255,0.45); text-align: right; }
+.glory-path-arrow { font-size: 18px; color: rgba(255,215,0,0.5); font-weight: 700; line-height: 1; }
+
 /* ===== МАГАЗИН: НОВЫЙ СТИЛЬ ===== */
 .shop-timer-bar {
   text-align: center; color: #FF9800; font-size: 13px;

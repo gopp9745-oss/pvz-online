@@ -99,6 +99,26 @@
       <!-- ПОЛЬЗОВАТЕЛЬ: панель -->
       <div id="user-panel" class="user-panel hidden">
 
+        <!-- Путь к славе — кликабельный баннер над карточкой -->
+        <div class="glory-path-banner" onclick="showRewardsPath()" title="Путь к славе">
+          <div class="glory-path-left">
+            <div class="glory-path-icon">🏆</div>
+            <div class="glory-path-info">
+              <div class="glory-path-title">Путь к славе</div>
+              <div class="glory-path-sub" id="glory-path-sub">Уровень 1</div>
+            </div>
+          </div>
+          <div class="glory-path-right">
+            <div class="glory-path-xp-wrap">
+              <div class="glory-path-xp-bar">
+                <div class="glory-path-xp-fill" id="glory-path-xp-fill" style="width:0%"></div>
+              </div>
+              <div class="glory-path-xp-label" id="glory-path-xp-label">0 / 100 XP</div>
+            </div>
+            <div class="glory-path-arrow">›</div>
+          </div>
+        </div>
+
         <!-- Карточка игрока -->
         <div class="player-card">
         <div class="player-card-avatar" id="menu-avatar">&#x1F3AE;</div>
@@ -112,13 +132,6 @@
               <div class="stat-chip wins-chip">
                 <span>&#x1F3C6;</span>
                 <span id="menu-wins">0</span>
-              </div>
-            </div>
-            <!-- Шкала уровня -->
-            <div class="menu-level-bar-wrap">
-              <div class="menu-level-label" id="menu-xp-label">Ур. 1 · 0/100 XP</div>
-              <div class="menu-level-bar">
-                <div class="menu-level-fill" id="menu-xp-fill" style="width:0%"></div>
               </div>
             </div>
           </div>
@@ -158,9 +171,6 @@
           </button>
           <button class="sec-btn" onclick="showLeaderboard()">
             <span>&#x1F3C6;</span> Лидеры
-          </button>
-          <button class="sec-btn" onclick="showRewardsPath()">
-            <span>🏆</span> Путь к славе
           </button>
           <button class="sec-btn" onclick="startTutorial()">
             <span>&#x1F4D6;</span> Обучение

@@ -38,6 +38,16 @@ function updateUserPanel(){
     var pct = lv.xpNext > 0 ? Math.min(100, Math.round(lv.xp / lv.xpNext * 100)) : 0;
     xpEl.style.width = pct + '%';
   }
+  // Обновляем баннер "Путь к славе"
+  var gpSub = document.getElementById('glory-path-sub');
+  var gpFill = document.getElementById('glory-path-xp-fill');
+  var gpLabel = document.getElementById('glory-path-xp-label');
+  if (gpSub) gpSub.textContent = 'Уровень ' + lv.level + ' · ' + (currentUser.wins || 0) + ' побед';
+  if (gpFill) {
+    var gpPct = lv.xpNext > 0 ? Math.min(100, Math.round(lv.xp / lv.xpNext * 100)) : 0;
+    gpFill.style.width = gpPct + '%';
+  }
+  if (gpLabel) gpLabel.textContent = lv.xp + ' / ' + lv.xpNext + ' XP';
 }
 function logout(){currentUser=null;localStorage.removeItem("pvz_user");document.getElementById("guest-buttons").classList.remove("hidden");document.getElementById("user-panel").classList.add("hidden");document.getElementById("admin-btn").classList.add("hidden");showScreen("screen-menu");showToast("Вы вышли из аккаунта","success");}
 function doLogin(){var u=document.getElementById("login-username").value.trim();var p=document.getElementById("login-password").value;var err=document.getElementById("login-error");err.classList.add("hidden");if(!u||!p){err.textContent="Заполните все поля";err.classList.remove("hidden");return;}socket.emit("login",{username:u,password:p});}
