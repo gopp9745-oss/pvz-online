@@ -569,8 +569,148 @@
     </div>
   </div>
 
+  <!-- БОКОВАЯ ПАНЕЛЬ СОБЫТИЯ -->
+  <div id="community-event-panel" class="community-event-panel">
+    <div class="cev-header">
+      <span class="cev-badge">🔴 LIVE</span>
+      <span class="cev-title">Событие сообщества</span>
+      <button class="cev-close" onclick="toggleEventPanel()">✕</button>
+    </div>
+    <div class="cev-body">
+      <div class="cev-event-icon">🎮</div>
+      <div class="cev-event-name">🚀 Релиз игры!</div>
+      <div class="cev-event-desc">Отмечаем запуск Plants vs Zombies Online! Сыграйте матчи вместе с сообществом и получите эксклюзивные награды!</div>
+
+      <!-- Прогресс события -->
+      <div class="cev-progress-wrap">
+        <div class="cev-progress-label">
+          <span>Побед сообщества</span>
+          <span id="cev-wins-count">0 / 100</span>
+        </div>
+        <div class="cev-progress-bar">
+          <div class="cev-progress-fill" id="cev-progress-fill" style="width:0%"></div>
+        </div>
+      </div>
+
+      <!-- Награды -->
+      <div class="cev-rewards-title">🎁 Награды за участие:</div>
+      <div class="cev-rewards-list">
+        <div class="cev-reward-item">
+          <span class="cev-reward-icon">🪙</span>
+          <div>
+            <div class="cev-reward-name">500 монет</div>
+            <div class="cev-reward-desc">Всем участникам</div>
+          </div>
+          <span class="cev-reward-check" id="cev-r1">🔒</span>
+        </div>
+        <div class="cev-reward-item">
+          <span class="cev-reward-icon">🌸</span>
+          <div>
+            <div class="cev-reward-name">Скин "Розовый горох"</div>
+            <div class="cev-reward-desc">За 1+ победу</div>
+          </div>
+          <span class="cev-reward-check" id="cev-r2">🔒</span>
+        </div>
+        <div class="cev-reward-item">
+          <span class="cev-reward-icon">🏆</span>
+          <div>
+            <div class="cev-reward-name">Значок "Первопроходец"</div>
+            <div class="cev-reward-desc">Топ-10 игроков</div>
+          </div>
+          <span class="cev-reward-check" id="cev-r3">🔒</span>
+        </div>
+        <div class="cev-reward-item">
+          <span class="cev-reward-icon">🟠</span>
+          <div>
+            <div class="cev-reward-name">Легендарный скин</div>
+            <div class="cev-reward-desc">При 100 победах сообщества</div>
+          </div>
+          <span class="cev-reward-check" id="cev-r4">🔒</span>
+        </div>
+      </div>
+
+      <!-- Таймер -->
+      <div class="cev-timer">
+        <span>⏰ До конца события:</span>
+        <span class="cev-timer-val" id="cev-timer">7д 00:00:00</span>
+      </div>
+
+      <button class="cev-play-btn" onclick="document.getElementById('community-event-panel').classList.remove('open');findGame&&currentUser?findGame():showScreen('screen-login')">
+        ⚔️ Участвовать!
+      </button>
+    </div>
+  </div>
+
+  <!-- Кнопка открытия панели события -->
+  <button class="cev-toggle-btn" id="cev-toggle-btn" onclick="toggleEventPanel()" title="Событие сообщества">
+    <span class="cev-toggle-icon">🎮</span>
+    <span class="cev-toggle-label">Событие</span>
+    <span class="cev-toggle-live">LIVE</span>
+  </button>
+
   <script src="/socket.io/socket.io.js"></script>
   <script src="app.js"></script>
   <script src="bot.js"></script>
+  <script>
+  // ===== COMMUNITY EVENT PANEL =====
+  var eventPanelOpen = false;
+  var eventEndTime = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 дней
+
+  function toggleEventPanel() {
+    eventPanelOpen = !eventPanelOpen;
+    var panel = document.getElementById('community-event-panel');
+    var btn = document.getElementById('cev-toggle-btn');
+    if (eventPanelOpen) {
+      panel.classList.add('open');
+      btn.classList.add('active');
+    } else {
+      panel.classList.remove('open');
+      btn.classList.remove('active');
+    }
+  }
+
+  // Таймер события
+  function updateEventTimer() {
+    var left = Math.max(0, eventEndTime - Date.now());
+    var d = Math.floor(left / 86400000);
+    var h = Math.floor((left % 86400000) / 3600000);
+    var m = Math.floor((left % 3600000) / 60000);
+    var s = Math.floor((left % 60000) / 1000);
+    var el = document.getElementById('cev-timer');
+    if (el) el.textContent = d + 'д ' + pad(h) + ':' + pad(m) + ':' + pad(s);
+  }
+  function pad(n) { return n < 10 ? '0' + n : n; }
+  setInterval(updateEventTimer, 1000);
+  updateEventTimer();
+
+  // Обновляем прогресс из событий сервера
+  if (typeof socket !== 'undefined') {
+    socket.on('events_data', function(events) {
+      var releaseEvent = events && events.find(function(e) { return e.name && e.name.includes('Релиз'); });
+      if (releaseEvent) {
+        var pct = Math.min(100, Math.round((releaseEvent.currentWins || 0) / (releaseEvent.targetWins || 100) * 100));
+        var fill = document.getElementById('cev-progress-fill');
+        var cnt = document.getElementById('cev-wins-count');
+        if (fill) fill.style.width = pct + '%';
+        if (cnt) cnt.textContent = (releaseEvent.currentWins || 0) + ' / ' + (releaseEvent.targetWins || 100);
+        // Разблокируем награды
+        if (pct >= 25) { var r1 = document.getElementById('cev-r1'); if(r1) r1.textContent = '✅'; }
+        if (pct >= 50) { var r2 = document.getElementById('cev-r2'); if(r2) r2.textContent = '✅'; }
+        if (pct >= 75) { var r3 = document.getElementById('cev-r3'); if(r3) r3.textContent = '✅'; }
+        if (pct >= 100) { var r4 = document.getElementById('cev-r4'); if(r4) r4.textContent = '✅'; }
+      }
+    });
+    // Запрашиваем события при загрузке
+    setTimeout(function() { socket.emit('get_events'); }, 1000);
+  }
+
+  // Показываем панель автоматически через 3 секунды при первом посещении
+  if (!localStorage.getItem('pvz_event_seen')) {
+    setTimeout(function() {
+      toggleEventPanel();
+      localStorage.setItem('pvz_event_seen', '1');
+    }, 3000);
+  }
+  </script>
 </body>
 </html>
