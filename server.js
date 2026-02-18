@@ -1726,6 +1726,29 @@ function runBotLogic(game) {
   }
 }
 
+// ==================== AUTO-CREATE RELEASE EVENT ====================
+(function ensureReleaseEvent() {
+  const d = loadDB();
+  if (!d.events) d.events = [];
+  const exists = d.events.find(e => e.name && e.name.includes('Релиз'));
+  if (!exists) {
+    d.events.push({
+      id: 'release_event_2024',
+      name: '🚀 Релиз игры',
+      description: 'Отмечаем запуск! Любая PvP победа засчитывается!',
+      targetWins: 100,
+      reward: 500,
+      currentWins: 0,
+      active: true,
+      completed: false,
+      participants: [],
+      createdAt: new Date().toISOString()
+    });
+    saveDB(d);
+    console.log('🎉 Событие "Релиз игры" создано автоматически!');
+  }
+})();
+
 // ==================== START ====================
 const os = require('os');
 function getLocalIP() {
