@@ -279,27 +279,63 @@ function renderPlants(grid) {
 function renderZombies(zombies) {
   var layer = document.getElementById('zombies-layer');
   if (!layer) return;
-  layer.innerHTML = '';
 
+  // Собираем id существующих элементов
+  var existingIds = {};
+  layer.querySelectorAll('.zombie-on-field').forEach(function(el) {
+    existingIds[el.dataset.zid] = el;
+  });
+
+  // Обновляем или создаём элементы для каждого зомби
+  var activeIds = {};
   zombies.forEach(function(z) {
-    var el = document.createElement('div');
-    el.className = 'zombie-on-field';
-    // col идёт от 8.5 до 0, поле 9 колонок
+    activeIds[z.id] = true;
     var leftPct = Math.max(0, Math.min(100, (z.col / 9) * 100));
     var topPct = (z.lane / 5) * 100 + 2;
-    el.style.cssText = 'position:absolute;left:' + leftPct + '%;top:' + topPct + '%;transform:translateX(-50%);';
-
     var emoji = zombieEmoji[z.type] || '🧟';
     var hpPct = z.maxHp ? Math.round((z.hp / z.maxHp) * 100) : 100;
     var hpColor = hpPct > 60 ? '#4CAF50' : hpPct > 30 ? '#FF9800' : '#f44336';
 
-    el.innerHTML =
-      '<div style="font-size:28px;text-align:center;line-height:1">' + emoji + '</div>' +
-      '<div style="width:32px;height:4px;background:#333;border-radius:2px;margin:2px auto 0">' +
-        '<div style="width:' + hpPct + '%;height:100%;background:' + hpColor + ';border-radius:2px"></div>' +
-      '</div>';
+    var el = existingIds[z.id];
+    if (!el) {
+      // Создаём новый элемент — сразу ставим на позицию БЕЗ transition
+      el = document.createElement('div');
+      el.className = 'zombie-on-field';
+      el.dataset.zid = z.id;
+      el.style.cssText =
+        'position:absolute;' +
+        'left:' + leftPct + '%;' +
+        'top:' + topPct + '%;' +
+        'transform:translateX(-50%);' +
+        'transition:left 0.9s linear, top 0.3s ease;' +
+        'will-change:left;';
+      el.innerHTML =
+        '<div class="z-emoji" style="font-size:28px;text-align:center;line-height:1">' + emoji + '</div>' +
+        '<div style="width:32px;height:4px;background:#333;border-radius:2px;margin:2px auto 0">' +
+          '<div class="z-hp-fill" style="width:' + hpPct + '%;height:100%;background:' + hpColor + ';border-radius:2px;transition:width 0.3s"></div>' +
+        '</div>';
+      layer.appendChild(el);
+    } else {
+      // Обновляем позицию плавно (transition уже задан)
+      el.style.left = leftPct + '%';
+      el.style.top = topPct + '%';
+      // Обновляем HP бар
+      var hpFill = el.querySelector('.z-hp-fill');
+      if (hpFill) {
+        hpFill.style.width = hpPct + '%';
+        hpFill.style.background = hpColor;
+      }
+    }
+  });
 
-    layer.appendChild(el);
+  // Удаляем зомби которых больше нет
+  layer.querySelectorAll('.zombie-on-field').forEach(function(el) {
+    if (!activeIds[el.dataset.zid]) {
+      // Анимация исчезновения
+      el.style.transition = 'opacity 0.2s';
+      el.style.opacity = '0';
+      setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 200);
+    }
   });
 }
 
