@@ -42,7 +42,31 @@ function updateUserPanel(){
 function logout(){currentUser=null;localStorage.removeItem("pvz_user");document.getElementById("guest-buttons").classList.remove("hidden");document.getElementById("user-panel").classList.add("hidden");document.getElementById("admin-btn").classList.add("hidden");showScreen("screen-menu");showToast("Вы вышли из аккаунта","success");}
 function doLogin(){var u=document.getElementById("login-username").value.trim();var p=document.getElementById("login-password").value;var err=document.getElementById("login-error");err.classList.add("hidden");if(!u||!p){err.textContent="Заполните все поля";err.classList.remove("hidden");return;}socket.emit("login",{username:u,password:p});}
 function doRegister(){var u=document.getElementById("reg-username").value.trim();var p=document.getElementById("reg-password").value;var p2=document.getElementById("reg-password2").value;var err=document.getElementById("reg-error");var suc=document.getElementById("reg-success");err.classList.add("hidden");suc.classList.add("hidden");if(!u||!p||!p2){err.textContent="Заполните все поля";err.classList.remove("hidden");return;}if(p!==p2){err.textContent="Пароли не совпадают";err.classList.remove("hidden");return;}socket.emit("register",{username:u,password:p});}
-socket.on("register_result",function(d){var err=document.getElementById("reg-error");var suc=document.getElementById("reg-success");if(d.success){suc.textContent=d.message;suc.classList.remove("hidden");setTimeout(function(){showScreen("screen-login");},1500);}else{err.textContent=d.message;err.classList.remove("hidden");}});
+socket.on("register_result",function(d){
+  var err=document.getElementById("reg-error");
+  var suc=document.getElementById("reg-success");
+  if(d.success){
+    suc.textContent=d.message;
+    suc.classList.remove("hidden");
+    // Автологин после регистрации и запуск обучения
+    if(d.user && d.isNew){
+      setTimeout(function(){
+        currentUser = d.user;
+        localStorage.setItem('pvz_user', JSON.stringify(d.user));
+        updateUserPanel();
+        showScreen('screen-menu');
+        socket.emit('set_user_id', { userId: d.user.id });
+        // Запускаем обучение автоматически
+        setTimeout(function(){ startTutorial(); }, 400);
+      }, 800);
+    } else {
+      setTimeout(function(){showScreen("screen-login");},1500);
+    }
+  } else {
+    err.textContent=d.message;
+    err.classList.remove("hidden");
+  }
+});
 socket.on("login_result",function(d){if(d.success){currentUser=d.user;localStorage.setItem("pvz_user",JSON.stringify(d.user));updateUserPanel();showScreen("screen-menu");showToast("Добро пожаловать, "+d.user.username,"success");}else{var err=document.getElementById("login-error");err.textContent=d.message;err.classList.remove("hidden");}});
 function showLeaderboard(){socket.emit("get_leaderboard");showScreen("screen-leaderboard");}
 socket.on("leaderboard_data",function(data){leaderboardData=data;renderLeaderboard();});
@@ -540,8 +564,8 @@ var tutorialSteps = [
   },
   {
     icon: '🎉',
-    title: 'Готово! Вы готовы к игре!',
-    text: '<p>Теперь вы знаете всё необходимое для игры в <strong>Plants vs Zombies Online</strong>!</p><div class="tutorial-highlight">🌱 Защищайте дом растениями<br>🧟 Или атакуйте зомби<br>🏆 Побеждайте и поднимайтесь в рейтинге!</div><p style="text-align:center;margin-top:15px;font-size:18px">Удачи в битве! 🍀</p>'
+    title: 'Готово! Сыграйте тестовый матч!',
+    text: '<p>Вы знаете всё необходимое! Теперь попробуйте сыграть против <strong>бота</strong> — это безопасный тренировочный матч.</p><div class="tutorial-highlight">🤖 Бот (Лёгкий) — идеально для первой игры<br>🌱 Вы будете играть за Растения<br>🎯 Цель: продержаться 3 минуты!</div><div style="text-align:center;margin-top:20px"><button class="btn btn-success" style="font-size:18px;padding:14px 32px;border-radius:16px" onclick="startTutorialBotGame()">🤖 Начать тестовый матч!</button></div><p style="text-align:center;margin-top:12px;font-size:13px;color:rgba(255,255,255,0.6)">или нажмите "Закрыть" чтобы вернуться в меню</p>'
   }
 ];
 
@@ -1131,6 +1155,24 @@ socket.on('shop_timer', function(data) {
   el.textContent = '🔄 Ротация магазина через: ' + mins + ':' + (secs < 10 ? '0' : '') + secs;
   if (el.textContent.includes('0:00')) el.textContent = '🔄 Магазин обновляется...';
 });
+
+// ===== TUTORIAL BOT GAME =====
+function startTutorialBotGame() {
+  if (!currentUser) { showToast('Войдите в аккаунт', 'error'); return; }
+  // Закрываем туториал
+  var overlay = document.getElementById('tutorial-overlay');
+  if (overlay) overlay.style.display = 'none';
+  // Запускаем матч против лёгкого бота за растения
+  showToast('🤖 Запускаем тестовый матч...', 'success');
+  setTimeout(function() {
+    socket.emit('start_bot_game', {
+      userId: currentUser.id,
+      username: currentUser.username,
+      role: 'plant',
+      difficulty: 'easy'
+    });
+  }, 500);
+}
 
 // Закрытие по клику на фон
 document.getElementById && document.addEventListener('DOMContentLoaded', function() {

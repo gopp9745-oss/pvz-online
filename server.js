@@ -178,7 +178,9 @@ io.on('connection', (socket) => {
     db.users.push(newUser);
     saveDB(db);
 
-    socket.emit('register_result', { success: true, message: 'Регистрация успешна!' });
+    const safeNewUser = { ...newUser };
+    delete safeNewUser.password;
+    socket.emit('register_result', { success: true, message: 'Регистрация успешна!', user: safeNewUser, isNew: true });
   });
 
   socket.on('login', (data) => {
