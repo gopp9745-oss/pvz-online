@@ -1732,7 +1732,8 @@ function runBotLogic(game) {
   if (!d.events) d.events = [];
   const exists = d.events.find(e => e.name && e.name.includes('Релиз'));
   if (!exists) {
-    const endsAt = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 дней с момента создания
+    // Создаём событие с фиксированным endsAt — 7 дней с момента первого создания
+    const endsAt = Date.now() + 7 * 24 * 60 * 60 * 1000;
     d.events.push({
       id: 'release_event_2024',
       name: '🚀 Релиз игры',
@@ -1747,7 +1748,14 @@ function runBotLogic(game) {
       createdAt: new Date().toISOString()
     });
     saveDB(d);
-    console.log('🎉 Событие "Релиз игры" создано автоматически! Заканчивается: ' + new Date(endsAt).toLocaleString());
+    console.log('🎉 Событие "Релиз игры" создано! Заканчивается: ' + new Date(endsAt).toLocaleString());
+  } else if (!exists.endsAt) {
+    // Событие уже есть, но без endsAt (старая версия) — добавляем
+    exists.endsAt = Date.now() + 7 * 24 * 60 * 60 * 1000;
+    saveDB(d);
+    console.log('🔧 Добавлен endsAt к существующему событию: ' + new Date(exists.endsAt).toLocaleString());
+  } else {
+    console.log('✅ Событие "Релиз игры" активно. Заканчивается: ' + new Date(exists.endsAt).toLocaleString());
   }
 })();
 
