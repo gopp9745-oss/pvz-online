@@ -1,0 +1,11 @@
+node_modules/
+db.json
+*.log
+.env
+autostart.vbs
+start-server.bat
+start-tunnel.bat
+tunnel.js
+gen*.js
+gen*.py
+fix_*.py

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🛡️ Панель модератора - PvZ Online</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .mod-wrapper { max-width: 900px; margin: 0 auto; padding: 20px; }
+    .mod-header { display: flex; align-items: center; gap: 15px; margin-bottom: 24px; background: rgba(0,0,0,0.5); border-radius: 16px; padding: 16px 20px; border: 1px solid #FFD700; }
+    .mod-badge { background: linear-gradient(135deg, #FF8C00, #FFD700); color: #000; padding: 6px 14px; border-radius: 20px; font-weight: 700; font-size: 13px; }
+    .mod-title { font-size: 22px; font-weight: 700; color: #FFD700; }
+    .mod-expires { font-size: 12px; color: #aaa; margin-top: 4px; }
+    .mod-section { background: rgba(0,0,0,0.4); border-radius: 14px; padding: 20px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.1); }
+    .mod-section h3 { color: #FFD700; margin: 0 0 16px; font-size: 16px; }
+    .perm-badge { display: inline-block; background: rgba(76,175,80,0.2); border: 1px solid #4CAF50; color: #4CAF50; padding: 3px 10px; border-radius: 12px; font-size: 12px; margin: 2px; }
+    .perm-badge.locked { background: rgba(244,67,54,0.2); border-color: #f44336; color: #f44336; }
+    .users-list { display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; }
+    .user-row { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,0.05); border-radius: 10px; padding: 10px 14px; }
+    .user-row .uname { flex: 1; font-weight: 600; color: #fff; }
+    .user-row .ustats { font-size: 12px; color: #aaa; }
+    .user-row .ucoins { color: #FFD700; font-size: 13px; }
+    .give-coins-form { display: flex; gap: 8px; align-items: center; }
+    .give-coins-form input { width: 80px; }
+    .mod-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .mod-form .full { grid-column: 1/-1; }
+    .mod-notice { background: rgba(255,152,0,0.15); border: 1px solid #FF9800; border-radius: 10px; padding: 12px 16px; color: #FF9800; font-size: 13px; margin-bottom: 16px; }
+    .locked-section { opacity: 0.5; pointer-events: none; position: relative; }
+    .locked-section::after { content: '🔒 Нет доступа'; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); background: rgba(0,0,0,0.8); padding: 8px 16px; border-radius: 8px; color: #f44336; font-weight: 700; }
+    .timer-bar { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-top: 8px; overflow: hidden; }
+    .timer-fill { height: 100%; background: linear-gradient(90deg, #4CAF50, #FFD700); border-radius: 3px; transition: width 1s linear; }
+  </style>
+</head>
+<body class="admin-bg">
+  <div class="mod-wrapper">
+
+    <div class="mod-header">
+      <div>
+        <div class="mod-title">🛡️ Панель модератора</div>
+        <div class="mod-expires" id="mod-expires">Загрузка...</div>
+        <div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width:100%"></div></div>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:10px;align-items:center;">
+        <div id="mod-badge" class="mod-badge">МОДЕРАТОР</div>
+        <button class="btn btn-secondary btn-sm" onclick="window.location.href='/'">← Назад</button>
+      </div>
+    </div>
+
+    <div id="mod-notice" class="mod-notice hidden">
+      ⚠️ Ваши права ограничены. Некоторые функции недоступны.
+    </div>
+
+    <!-- Мои права -->
+    <div class="mod-section">
+      <h3>🔑 Мои права</h3>
+      <div id="perms-list">Загрузка...</div>
+    </div>
+
+    <!-- Пользователи -->
+    <div class="mod-section" id="section-users">
+      <h3>👥 Пользователи</h3>
+      <input type="text" id="mod-search" class="input-field" placeholder="Поиск по имени..." oninput="filterModUsers()" style="margin-bottom:12px;width:100%">
+      <div class="users-list" id="mod-users-list">Загрузка...</div>
+    </div>
+
+    <!-- Выдать монеты -->
+    <div class="mod-section" id="section-coins">
+      <h3>🪙 Выдать монеты игроку</h3>
+      <div class="mod-notice">⚠️ Максимум 500 монет за раз</div>
+      <div class="mod-form">
+        <div>
+          <label class="input-label">Игрок</label>
+          <select id="mod-coin-target" class="input-field">
+            <option value="">Выберите игрока...</option>
+          </select>
+        </div>
+        <div>
+          <label class="input-label">Количество монет (макс. 500)</label>
+          <input type="number" id="mod-coin-amount" class="input-field" placeholder="100" min="1" max="500">
+        </div>
+        <div class="full">
+          <button class="btn btn-success" onclick="modGiveCoins()">🪙 Выдать монеты</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Создать промокод -->
+    <div class="mod-section" id="section-promo">
+      <h3>🎟️ Создать промокод</h3>
+      <div class="mod-notice">⚠️ Максимальная награда: 200 монет</div>
+      <div class="mod-form">
+        <div>
+          <label class="input-label">Код промокода</label>
+          <input type="text" id="mod-promo-code" class="input-field" placeholder="PROMO2024">
+        </div>
+        <div>
+          <label class="input-label">Награда (макс. 200)</label>
+          <input type="number" id="mod-promo-reward" class="input-field" placeholder="100" min="1" max="200">
+        </div>
+        <div>
+          <label class="input-label">Макс. использований (0 = ∞)</label>
+          <input type="number" id="mod-promo-uses" class="input-field" placeholder="0" min="0">
+        </div>
+        <div style="display:flex;align-items:flex-end;">
+          <button class="btn btn-primary" onclick="modCreatePromo()">✅ Создать</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="mod-result" class="hidden" style="margin-top:16px;"></div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    var socket = io();
+    var myUserId = null;
+    var modData = null;
+    var modExpires = null;
+    var timerInterval = null;
+
+    function showToast(msg, type) {
+      var t = document.getElementById('toast');
+      if (!t) return;
+      t.textContent = msg;
+      t.className = 'toast ' + (type || 'success');
+      t.classList.remove('hidden');
+      setTimeout(function() { t.classList.add('hidden'); }, 3000);
+    }
+
+    window.addEventListener('DOMContentLoaded', function() {
+      var saved = localStorage.getItem('pvz_user');
+      if (!saved) { window.location.href = '/'; return; }
+      try { var u = JSON.parse(saved); myUserId = u.id; } catch(e) { window.location.href = '/'; return; }
+      socket.emit('mod_get_data', { userId: myUserId });
+    });
+
+    socket.on('mod_data', function(data) {
+      if (!data.success) {
+        document.body.innerHTML = '<div style="text-align:center;padding:60px;color:#f44336;font-size:20px;">❌ ' + data.message + '<br><br><a href="/" style="color:#4CAF50">← На главную</a></div>';
+        return;
+      }
+      modData = data;
+      modExpires = data.expiresAt;
+      renderModPanel(data);
+    });
+
+    function renderModPanel(data) {
+      var perms = data.perms || [];
+      var isAll = perms.includes('all');
+
+      // Права
+      var permNames = {
+        'all': '👑 Все права (Администратор)',
+        'view_users': '👥 Просмотр пользователей',
+        'give_coins': '🪙 Выдача монет (макс. 500)',
+        'create_promo': '🎟️ Создание промокодов (макс. 200 монет)',
+        'view_promos': '📋 Просмотр промокодов'
+      };
+      var allPerms = ['view_users', 'give_coins', 'create_promo', 'view_promos'];
+      var permsList = document.getElementById('perms-list');
+      permsList.innerHTML = '';
+      if (isAll) {
+        permsList.innerHTML = '<span class="perm-badge">👑 Все права (Администратор)</span>';
+      } else {
+        allPerms.forEach(function(p) {
+          var has = perms.includes(p);
+          var span = document.createElement('span');
+          span.className = 'perm-badge' + (has ? '' : ' locked');
+          span.textContent = (has ? '✅ ' : '🔒 ') + (permNames[p] || p);
+          permsList.appendChild(span);
+        });
+      }
+
+      // Таймер
+      if (modExpires) {
+        document.getElementById('mod-notice').classList.remove('hidden');
+        updateTimer();
+        timerInterval = setInterval(updateTimer, 1000);
+      } else {
+        document.getElementById('mod-expires').textContent = 'Постоянные права';
+      }
+
+      // Блокируем секции без прав
+      if (!isAll && !perms.includes('give_coins')) {
+        document.getElementById('section-coins').classList.add('locked-section');
+      }
+      if (!isAll && !perms.includes('create_promo')) {
+        document.getElementById('section-promo').classList.add('locked-section');
+      }
+
+      // Пользователи
+      renderUsers(data.users || []);
+    }
+
+    function updateTimer() {
+      if (!modExpires) return;
+      var left = Math.max(0, modExpires - Date.now());
+      var h = Math.floor(left / 3600000);
+      var m = Math.floor((left % 3600000) / 60000);
+      var s = Math.floor((left % 60000) / 1000);
+      document.getElementById('mod-expires').textContent = 
+        'Истекает через: ' + h + 'ч ' + m + 'м ' + s + 'с';
+      
+      // Прогресс-бар (предполагаем макс 24ч)
+      var maxDur = 24 * 3600000;
+      var pct = Math.min(100, (left / maxDur) * 100);
+      var fill = document.getElementById('timer-fill');
+      if (fill) fill.style.width = pct + '%';
+      
+      if (left <= 0) {
+        clearInterval(timerInterval);
+        document.getElementById('mod-expires').textContent = '⛔ Срок истёк!';
+        showToast('Срок модератора истёк!', 'error');
+        setTimeout(function() { window.location.href = '/'; }, 3000);
+      }
+    }
+
+    var allUsers = [];
+    function renderUsers(users) {
+      allUsers = users;
+      var select = document.getElementById('mod-coin-target');
+      select.innerHTML = '<option value="">Выберите игрока...</option>';
+      users.forEach(function(u) {
+        var opt = document.createElement('option');
+        opt.value = u.id;
+        opt.textContent = u.username + ' (' + u.coins + ' 🪙)';
+        select.appendChild(opt);
+      });
+      filterModUsers();
+    }
+
+    function filterModUsers() {
+      var q = (document.getElementById('mod-search').value || '').toLowerCase();
+      var list = document.getElementById('mod-users-list');
+      list.innerHTML = '';
+      var filtered = allUsers.filter(function(u) { return u.username.toLowerCase().includes(q); });
+      if (!filtered.length) { list.innerHTML = '<div style="color:#aaa;text-align:center;padding:20px;">Не найдено</div>'; return; }
+      filtered.forEach(function(u) {
+        var row = document.createElement('div');
+        row.className = 'user-row';
+        var badge = u.isAdmin ? '👑' : u.isModerator ? '🛡️' : '👤';
+        var expStr = '';
+        if (u.isModerator && u.moderatorExpires) {
+          var left = Math.max(0, u.moderatorExpires - Date.now());
+          var h = Math.floor(left / 3600000);
+          expStr = ' <span style="color:#FF9800;font-size:11px;">(мод. ' + h + 'ч)</span>';
+        }
+        row.innerHTML = 
+          '<span style="font-size:18px;">' + badge + '</span>' +
+          '<span class="uname">' + u.username + expStr + '</span>' +
+          '<span class="ustats">🏆 ' + u.wins + ' | 💀 ' + u.losses + '</span>' +
+          '<span class="ucoins">🪙 ' + u.coins + '</span>';
+        list.appendChild(row);
+      });
+    }
+
+    function modGiveCoins() {
+      var targetId = document.getElementById('mod-coin-target').value;
+      var amount = parseInt(document.getElementById('mod-coin-amount').value) || 0;
+      if (!targetId) { showToast('Выберите игрока!', 'error'); return; }
+      if (amount <= 0 || amount > 500) { showToast('Введите сумму от 1 до 500!', 'error'); return; }
+      socket.emit('mod_give_coins', { userId: myUserId, targetId: targetId, amount: amount });
+    }
+
+    function modCreatePromo() {
+      var code = document.getElementById('mod-promo-code').value.trim();
+      var reward = parseInt(document.getElementById('mod-promo-reward').value) || 0;
+      var maxUses = parseInt(document.getElementById('mod-promo-uses').value) || 0;
+      if (!code) { showToast('Введите код!', 'error'); return; }
+      if (reward <= 0 || reward > 200) { showToast('Награда от 1 до 200!', 'error'); return; }
+      socket.emit('mod_create_promo', { userId: myUserId, code: code, reward: reward, maxUses: maxUses || null });
+    }
+
+    socket.on('mod_action_result', function(data) {
+      showToast(data.message, data.success ? 'success' : 'error');
+      if (data.success) {
+        socket.emit('mod_get_data', { userId: myUserId });
+      }
+    });
+  </script>
+</body>
+</html>

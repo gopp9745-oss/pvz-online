@@ -1,0 +1,410 @@
+/* ===== PLANT & ZOMBIE SPRITES ===== */
+
+/* Базовые стили спрайтов */
+.sprite {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  position: relative;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+  transition: transform 0.1s;
+  animation: sprite-idle 2s ease-in-out infinite;
+}
+
+@keyframes sprite-idle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+/* ===== РАСТЕНИЯ ===== */
+
+/* 🫛 Горошина — покачивается и "стреляет" */
+.sprite-peashooter {
+  font-size: 36px;
+  animation: peashooter-shoot 1.2s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px rgba(100,200,100,0.7)) drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+@keyframes peashooter-shoot {
+  0%, 70%, 100% { transform: scaleX(1) rotate(0deg); }
+  80% { transform: scaleX(1.2) rotate(-5deg); }
+  90% { transform: scaleX(0.9) rotate(5deg); }
+}
+
+/* 🌻 Подсолнух — вращается и светится */
+.sprite-sunflower {
+  font-size: 38px;
+  animation: sunflower-glow 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 10px #FFD700) drop-shadow(0 0 20px rgba(255,215,0,0.4)) drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+@keyframes sunflower-glow {
+  0%, 100% { transform: rotate(-8deg) scale(1); filter: drop-shadow(0 0 8px #FFD700); }
+  50% { transform: rotate(8deg) scale(1.08); filter: drop-shadow(0 0 16px #FFD700) drop-shadow(0 0 30px rgba(255,215,0,0.5)); }
+}
+
+/* 🌰 Орех — трясётся при атаке */
+.sprite-wallnut {
+  font-size: 36px;
+  animation: wallnut-defend 3s ease-in-out infinite;
+  filter: drop-shadow(0 0 5px rgba(139,90,43,0.6)) drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+@keyframes wallnut-defend {
+  0%, 85%, 100% { transform: rotate(0deg) scale(1); }
+  88% { transform: rotate(-6deg) scale(1.05); }
+  92% { transform: rotate(6deg) scale(1.05); }
+  96% { transform: rotate(-3deg) scale(1.02); }
+}
+
+/* 🍒 Вишня-бомба — пульсирует с красным свечением */
+.sprite-cherrybomb {
+  font-size: 36px;
+  animation: cherry-danger 0.7s ease-in-out infinite;
+  filter: drop-shadow(0 0 8px #FF2222) drop-shadow(0 0 16px rgba(255,50,50,0.5)) drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+@keyframes cherry-danger {
+  0%, 100% { transform: scale(1) rotate(-3deg); filter: drop-shadow(0 0 6px #FF2222); }
+  50% { transform: scale(1.12) rotate(3deg); filter: drop-shadow(0 0 14px #FF2222) drop-shadow(0 0 25px rgba(255,50,50,0.6)); }
+}
+
+/* 🫐 Снежный горох — ледяное мерцание */
+.sprite-snowpea {
+  font-size: 36px;
+  animation: snowpea-ice 1.8s ease-in-out infinite;
+  filter: drop-shadow(0 0 8px #00CFFF) drop-shadow(0 0 16px rgba(0,200,255,0.4)) drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+@keyframes snowpea-ice {
+  0%, 100% { transform: scaleX(1) rotate(0deg); filter: drop-shadow(0 0 6px #00CFFF); }
+  40% { transform: scaleX(1.1) rotate(-5deg); filter: drop-shadow(0 0 14px #00CFFF) drop-shadow(0 0 25px rgba(0,200,255,0.5)); }
+  80% { transform: scaleX(0.95) rotate(5deg); }
+}
+
+/* 🔥 Огненный цветок — горит */
+.sprite-fireflower {
+  font-size: 36px;
+  animation: fire-burn 0.5s ease-in-out infinite;
+  filter: drop-shadow(0 0 10px #FF6600) drop-shadow(0 0 20px rgba(255,100,0,0.5)) drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+@keyframes fire-burn {
+  0%, 100% { transform: scale(1) rotate(-3deg); filter: drop-shadow(0 0 8px #FF6600); }
+  50% { transform: scale(1.1) rotate(3deg); filter: drop-shadow(0 0 16px #FF6600) drop-shadow(0 0 28px rgba(255,100,0,0.6)); }
+}
+
+/* ⚡ Кактус — электрический разряд */
+.sprite-cactus {
+  font-size: 36px;
+  animation: cactus-zap 1.5s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px #FFFF00) drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+@keyframes cactus-zap {
+  0%, 80%, 100% { transform: scale(1); filter: drop-shadow(0 0 4px #FFFF00); }
+  85% { transform: scale(1.15) rotate(-5deg); filter: drop-shadow(0 0 18px #FFFF00) brightness(1.6); }
+  90% { transform: scale(0.95) rotate(5deg); filter: drop-shadow(0 0 10px #FFFF00); }
+}
+
+/* ===== ЗОМБИ ===== */
+
+/* 🧟 Обычный зомби — медленная ходьба */
+.sprite-zombie-basic {
+  font-size: 34px;
+  animation: zombie-shamble 1s ease-in-out infinite;
+  filter: drop-shadow(0 0 4px rgba(100,200,100,0.4)) drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+@keyframes zombie-shamble {
+  0%, 100% { transform: translateX(0) rotate(-3deg) scaleY(1); }
+  25% { transform: translateX(-1px) rotate(0deg) scaleY(1.02); }
+  50% { transform: translateX(-2px) rotate(3deg) scaleY(1); }
+  75% { transform: translateX(-1px) rotate(0deg) scaleY(0.98); }
+}
+
+/* 🪖 Конус — средняя скорость */
+.sprite-zombie-cone {
+  font-size: 34px;
+  animation: zombie-shamble 0.8s ease-in-out infinite;
+  filter: drop-shadow(0 0 5px rgba(255,140,0,0.5)) drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+/* ⛑️ Ведро — медленный, тяжёлый */
+.sprite-zombie-bucket {
+  font-size: 34px;
+  animation: zombie-heavy 1.2s ease-in-out infinite;
+  filter: drop-shadow(0 0 5px rgba(150,150,150,0.6)) drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+@keyframes zombie-heavy {
+  0%, 100% { transform: translateX(0) rotate(-2deg); }
+  50% { transform: translateX(-2px) rotate(2deg) scaleY(0.97); }
+}
+
+/* 🏃 Футболист — быстрый бег */
+.sprite-zombie-football {
+  font-size: 34px;
+  animation: zombie-sprint 0.35s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px rgba(50,200,50,0.5)) drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+@keyframes zombie-sprint {
+  0%, 100% { transform: translateX(0) rotate(-5deg) scaleX(1.05); }
+  50% { transform: translateX(-4px) rotate(5deg) scaleX(0.95); }
+}
+
+/* 🧟‍♀️ Рыцарь */
+.sprite-zombie-knight {
+  font-size: 34px;
+  animation: zombie-heavy 1s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px rgba(200,200,200,0.6)) drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+
+/* 👾 Гигант — топает */
+.sprite-zombie-giant {
+  font-size: 44px;
+  animation: giant-stomp 1s ease-in-out infinite;
+  filter: drop-shadow(0 0 10px rgba(180,0,0,0.7)) drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+}
+@keyframes giant-stomp {
+  0%, 100% { transform: translateY(0) scale(1); }
+  30% { transform: translateY(-4px) scale(1.04); }
+  60% { transform: translateY(2px) scale(0.97); }
+}
+
+/* ===== ЭФФЕКТЫ УРОНА ===== */
+.sprite-damaged {
+  animation: damage-flash 0.3s ease-in-out !important;
+}
+@keyframes damage-flash {
+  0%, 100% { filter: none; }
+  50% { filter: brightness(3) saturate(0); }
+}
+
+/* ===== ЭФФЕКТ ЗАМОРОЗКИ ===== */
+.sprite-frozen {
+  filter: hue-rotate(180deg) brightness(1.3) !important;
+  animation: frozen-shake 0.5s ease-in-out infinite !important;
+}
+@keyframes frozen-shake {
+  0%, 100% { transform: rotate(-2deg); }
+  50% { transform: rotate(2deg); }
+}
+
+/* ===== ЭФФЕКТ ОГНЯ ===== */
+.sprite-burning {
+  filter: hue-rotate(0deg) saturate(2) brightness(1.2) !important;
+  animation: burning-anim 0.3s ease-in-out infinite !important;
+}
+@keyframes burning-anim {
+  0%, 100% { transform: scale(1) rotate(-2deg); }
+  50% { transform: scale(1.05) rotate(2deg); }
+}
+
+/* ===== ПУЛЯ ГОРОШИНЫ ===== */
+.pea-bullet {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: radial-gradient(circle, #90EE90, #228B22);
+  border-radius: 50%;
+  box-shadow: 0 0 8px #90EE90, 0 0 16px rgba(144,238,144,0.4);
+  animation: pea-fly 0.3s linear forwards;
+}
+@keyframes pea-fly {
+  from { transform: translateX(0) scale(1); opacity: 1; }
+  to { transform: translateX(70px) scale(0.6); opacity: 0; }
+}
+
+/* ===== СНЕЖНЫЙ ШАРИК ===== */
+.snow-bullet {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: radial-gradient(circle, #E0F7FF, #00BFFF);
+  border-radius: 50%;
+  box-shadow: 0 0 10px #00BFFF, 0 0 20px rgba(0,191,255,0.4);
+  animation: pea-fly 0.3s linear forwards;
+}
+
+/* ===== ВЗРЫВ ВИШНИ ===== */
+.cherry-explosion {
+  position: absolute;
+  width: 70px;
+  height: 70px;
+  background: radial-gradient(circle, #FFFF00 0%, #FF4500 40%, transparent 70%);
+  border-radius: 50%;
+  animation: explode 0.6s ease-out forwards;
+  pointer-events: none;
+  z-index: 100;
+}
+@keyframes explode {
+  0% { transform: scale(0); opacity: 1; }
+  60% { opacity: 0.8; }
+  100% { transform: scale(3.5); opacity: 0; }
+}
+
+/* ===== СОЛНЦЕ ===== */
+.sun-particle {
+  position: absolute;
+  font-size: 22px;
+  animation: sun-fall 2.2s ease-in forwards;
+  pointer-events: none;
+  z-index: 50;
+  filter: drop-shadow(0 0 6px #FFD700);
+}
+@keyframes sun-fall {
+  0% { transform: translateY(-40px) rotate(0deg) scale(1.2); opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translateY(90px) rotate(360deg) scale(0.8); opacity: 0; }
+}
+
+/* ===== МОЗГИ ===== */
+.brain-particle {
+  position: absolute;
+  font-size: 20px;
+  animation: brain-float 1.8s ease-out forwards;
+  pointer-events: none;
+  z-index: 50;
+}
+@keyframes brain-float {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-60px) scale(0.4); opacity: 0; }
+}
+
+/* ===== КЛЕТКИ ПОЛЯ ===== */
+.game-cell {
+  position: relative;
+  overflow: visible !important;
+}
+
+.plant-in-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.plant-emoji {
+  font-size: 34px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+  transition: transform 0.15s;
+  animation: plant-breathe 2s ease-in-out infinite;
+}
+@keyframes plant-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+.plant-emoji:hover {
+  transform: scale(1.15) !important;
+}
+
+/* ===== ЗОМБИ НА ПОЛЕ ===== */
+.zombie-on-field {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: absolute;
+  z-index: 10;
+  transition: left 0.5s linear;
+}
+
+.zombie-emoji {
+  font-size: 30px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+  animation: zombie-shamble 1s ease-in-out infinite;
+}
+
+/* ===== ПОЛОСКИ HP ===== */
+.plant-hp-bar {
+  width: 90%;
+  height: 5px;
+  background: rgba(0,0,0,0.4);
+  border-radius: 3px;
+  margin-top: 2px;
+  overflow: hidden;
+}
+
+.plant-hp-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease, background-color 0.3s;
+  background: linear-gradient(90deg, #4CAF50, #8BC34A);
+}
+
+.plant-hp-fill.low {
+  background: linear-gradient(90deg, #f44336, #FF5722);
+}
+
+.plant-hp-fill.medium {
+  background: linear-gradient(90deg, #FF9800, #FFC107);
+}
+
+/* ===== АНИМАЦИЯ ПОЯВЛЕНИЯ ===== */
+@keyframes plant-appear {
+  0% { transform: scale(0) rotate(-15deg); opacity: 0; }
+  60% { transform: scale(1.25) rotate(8deg); opacity: 1; }
+  80% { transform: scale(0.95) rotate(-3deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.plant-appear {
+  animation: plant-appear 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* ===== АНИМАЦИЯ СМЕРТИ ===== */
+@keyframes plant-die {
+  0% { transform: scale(1); opacity: 1; }
+  30% { transform: scale(1.3) rotate(20deg); opacity: 0.7; }
+  100% { transform: scale(0) rotate(45deg); opacity: 0; }
+}
+
+.plant-die {
+  animation: plant-die 0.5s ease-in forwards;
+}
+
+@keyframes zombie-die {
+  0% { transform: scaleY(1) rotate(0deg); opacity: 1; }
+  50% { transform: scaleY(0.5) rotate(15deg); opacity: 0.5; }
+  100% { transform: scaleY(0) translateY(20px); opacity: 0; }
+}
+
+.zombie-die {
+  animation: zombie-die 0.6s ease-in forwards;
+}
+
+/* ===== КАРТОЧКИ РАСТЕНИЙ/ЗОМБИ ===== */
+.plant-card, .zombie-card {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.plant-card:hover, .zombie-card:hover {
+  transform: translateY(-4px) scale(1.05);
+}
+.plant-card.selected, .zombie-card.selected {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 0 0 3px #FFD700, 0 8px 20px rgba(255,215,0,0.4) !important;
+}
+
+/* Анимация эмодзи в карточках */
+.card-emoji {
+  font-size: 36px;
+  animation: card-emoji-bounce 2s ease-in-out infinite;
+  display: block;
+  text-align: center;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+}
+@keyframes card-emoji-bounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-4px) scale(1.08); }
+}
+
+.plant-card:hover .card-emoji {
+  animation: card-emoji-excited 0.4s ease-in-out infinite;
+}
+.zombie-card:hover .card-emoji {
+  animation: card-emoji-excited 0.4s ease-in-out infinite;
+}
+@keyframes card-emoji-excited {
+  0%, 100% { transform: rotate(-8deg) scale(1.1); }
+  50% { transform: rotate(8deg) scale(1.15); }
+}

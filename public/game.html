@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌿 Игра - Plants vs Zombies Online</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="sprites.css">
+</head>
+<body class="game-bg">
+
+  <!-- HUD -->
+  <div id="game-hud" class="game-hud">
+    <div class="hud-left">
+      <div class="hud-player plant-side">
+        <span class="hud-role">🌿 Растения</span>
+        <span class="hud-name" id="hud-plant-name">-</span>
+      </div>
+    </div>
+    <div class="hud-center">
+      <div class="hp-bar-container">
+        <div class="hp-label">🏠 Здоровье базы</div>
+        <div class="hp-bar">
+          <div class="hp-fill" id="hp-fill" style="width:100%"></div>
+          <span class="hp-text" id="hp-text">100</span>
+        </div>
+      </div>
+      <div class="game-timer" id="game-timer">00:00</div>
+    </div>
+    <div class="hud-right">
+      <div class="hud-player zombie-side">
+        <span class="hud-role">💀 Зомби</span>
+        <span class="hud-name" id="hud-zombie-name">-</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ресурсы -->
+  <div id="resources-bar" class="resources-bar hidden">
+    <div id="sun-display" class="resource-display plant-resource hidden">
+      ☀️ <span id="sun-count">50</span>
+    </div>
+    <div id="brain-display" class="resource-display zombie-resource hidden">
+      🧠 <span id="brain-count">50</span>
+    </div>
+  </div>
+
+  <!-- Игровое поле -->
+  <div id="game-area" class="game-area">
+    <div id="game-grid" class="game-grid"></div>
+    <div id="zombies-layer" class="zombies-layer"></div>
+    <!-- Дом (база растений) -->
+    <div class="home-base">🏠</div>
+  </div>
+
+  <!-- Панель растений -->
+  <div id="plant-panel" class="action-panel plant-panel hidden">
+    <div class="panel-title">🌿 Выбери растение</div>
+    <div class="cards-row">
+      <div class="plant-card" onclick="selectPlant('peashooter')" data-type="peashooter">
+        <div class="card-emoji">🫛</div>
+        <div class="card-name">Горошина</div>
+        <div class="card-cost">☀️ 100</div>
+      </div>
+      <div class="plant-card" onclick="selectPlant('sunflower')" data-type="sunflower">
+        <div class="card-emoji">🌻</div>
+        <div class="card-name">Подсолнух</div>
+        <div class="card-cost">☀️ 50</div>
+      </div>
+      <div class="plant-card" onclick="selectPlant('wallnut')" data-type="wallnut">
+        <div class="card-emoji">🌰</div>
+        <div class="card-name">Орех</div>
+        <div class="card-cost">☀️ 50</div>
+      </div>
+      <div class="plant-card" onclick="selectPlant('cherrybomb')" data-type="cherrybomb">
+        <div class="card-emoji">🍒</div>
+        <div class="card-name">Вишня-бомба</div>
+        <div class="card-cost">☀️ 150</div>
+      </div>
+      <div class="plant-card" onclick="selectPlant('snowpea')" data-type="snowpea">
+        <div class="card-emoji">🫐</div>
+        <div class="card-name">Снежный горох</div>
+        <div class="card-cost">☀️ 175</div>
+      </div>
+    </div>
+    <div class="selected-info" id="selected-plant-info">Нажмите на карту для посадки</div>
+    <button class="btn btn-danger btn-sm" onclick="leaveGame()">🏳️ Сдаться</button>
+  </div>
+
+  <!-- Панель зомби -->
+  <div id="zombie-panel" class="action-panel zombie-panel hidden">
+    <div class="panel-title">💀 Выбери зомби</div>
+    <div class="cards-row">
+      <div class="zombie-card" onclick="selectZombie('basic')" data-type="basic">
+        <div class="card-emoji">🧟</div>
+        <div class="card-name">Обычный</div>
+        <div class="card-cost">🧠 50</div>
+      </div>
+      <div class="zombie-card" onclick="selectZombie('cone')" data-type="cone">
+        <div class="card-emoji">🪖</div>
+        <div class="card-name">Конус</div>
+        <div class="card-cost">🧠 75</div>
+      </div>
+      <div class="zombie-card" onclick="selectZombie('bucket')" data-type="bucket">
+        <div class="card-emoji">⛑️</div>
+        <div class="card-name">Ведро</div>
+        <div class="card-cost">🧠 100</div>
+      </div>
+      <div class="zombie-card" onclick="selectZombie('football')" data-type="football">
+        <div class="card-emoji">🏃</div>
+        <div class="card-name">Футболист</div>
+        <div class="card-cost">🧠 125</div>
+      </div>
+    </div>
+    <div class="lane-selector">
+      <div class="panel-title">Выбери линию (1-5):</div>
+      <div class="lane-buttons">
+        <button class="lane-btn active" onclick="selectLane(0, this)">1</button>
+        <button class="lane-btn" onclick="selectLane(1, this)">2</button>
+        <button class="lane-btn" onclick="selectLane(2, this)">3</button>
+        <button class="lane-btn" onclick="selectLane(3, this)">4</button>
+        <button class="lane-btn" onclick="selectLane(4, this)">5</button>
+      </div>
+    </div>
+    <button class="btn btn-success btn-sm" onclick="sendZombie()">💀 Отправить зомби!</button>
+    <button class="btn btn-danger btn-sm" onclick="leaveGame()">🏳️ Сдаться</button>
+  </div>
+
+  <!-- Экран завершения игры -->
+  <div id="game-over-screen" class="game-over-screen hidden">
+    <div class="game-over-card">
+      <div class="game-over-emoji" id="game-over-emoji">🏆</div>
+      <div class="game-over-title" id="game-over-title">Победа!</div>
+      <div class="game-over-desc" id="game-over-desc"></div>
+      <div class="game-over-reward hidden" id="game-over-reward"></div>
+      <button class="btn btn-primary" onclick="goHome()">🏠 В главное меню</button>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

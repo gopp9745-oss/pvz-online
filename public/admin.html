@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - PvZ Online</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="admin-bg">
+  <div class="admin-wrapper">
+    <div class="admin-sidebar">
+      <div class="admin-logo">
+        <div class="admin-logo-icon">&#x1F451;</div>
+        <div class="admin-logo-text">Admin Panel</div>
+      </div>
+      <nav class="admin-nav">
+        <button class="admin-nav-btn active" onclick="showAdminTab('tab-users', this)">&#x1F465; Users</button>
+        <button class="admin-nav-btn" onclick="showAdminTab('tab-mods', this)">&#x1F6E1; Moderators</button>
+        <button class="admin-nav-btn" onclick="showAdminTab('tab-promos', this)">&#x1F3DF; Promos</button>
+        <button class="admin-nav-btn" onclick="showAdminTab('tab-shop', this)">&#x1F6D2; Shop</button>
+        <button class="admin-nav-btn" onclick="showAdminTab('tab-events', this)">&#x1F3C6; Events</button>
+      </nav>
+      <div class="admin-sidebar-footer">
+        <button class="btn btn-secondary btn-sm" onclick="window.location.href='/'">&#x2190; Back</button>
+        <div class="admin-user-info" id="admin-user-info">Loading...</div>
+      </div>
+    </div>
+    <div class="admin-content">
+      <div id="tab-users" class="admin-tab" style="display:block">
+        <div class="admin-tab-header"><h2>&#x1F465; Users</h2><button class="btn btn-primary btn-sm" onclick="loadAdminData()">&#x1F504; Refresh</button></div>
+        <div class="admin-search-bar"><input type="text" id="user-search" placeholder="Search..." class="input-field" oninput="filterUsers()"></div>
+        <div id="users-table-container"><div class="loading">Loading...</div></div>
+      </div>
+      <div id="tab-mods" class="admin-tab" style="display:none">
+        <div class="admin-tab-header"><h2>&#x1F6E1; Moderators</h2><button class="btn btn-primary btn-sm" onclick="loadAdminData()">&#x1F504; Refresh</button></div>
+        <div class="admin-card">
+          <h3>&#x2795; Create Temporary Moderator</h3>
+          <div class="admin-form-grid">
+            <div><label class="input-label">User</label><select id="mod-target" class="input-field"><option value="">Select user...</option></select></div>
+            <div><label class="input-label">Duration (hours)</label><input type="number" id="mod-hours" class="input-field" value="24" min="1" max="720"></div>
+          </div>
+          <div style="margin:12px 0"><label class="input-label">Permissions:</label>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">
+            <label style="display:flex;align-items:center;gap:6px;color:#fff"><input type="checkbox" id="perm-view_users" checked> &#x1F465; View users</label>
+            <label style="display:flex;align-items:center;gap:6px;color:#fff"><input type="checkbox" id="perm-give_coins" checked> &#x1FA99; Give coins (max 500)</label>
+            <label style="display:flex;align-items:center;gap:6px;color:#fff"><input type="checkbox" id="perm-create_promo"> &#x1F39F; Create promos (max 200)</label>
+            <label style="display:flex;align-items:center;gap:6px;color:#fff"><input type="checkbox" id="perm-view_promos"> &#x1F4CB; View promos</label>
+          </div></div>
+          <button class="btn btn-success" onclick="createModerator()">&#x2705; Create Moderator</button>
+        </div>
+        <div class="admin-card" style="margin-top:16px">
+          <h3>&#x1F6E1; Active Moderators</h3>
+          <div id="mods-list"><div class="loading">Loading...</div></div>
+        </div>
+      </div>
+      <div id="tab-promos" class="admin-tab" style="display:none">
+        <div class="admin-tab-header"><h2>&#x1F3DF; Promo Codes</h2><button class="btn btn-primary btn-sm" onclick="loadAdminData()">&#x1F504; Refresh</button></div>
+        <div class="admin-card">
+          <h3>&#x2795; Create Promo</h3>
+          <div class="admin-form-grid">
+            <div><label class="input-label">Code</label><input type="text" id="promo-code" class="input-field" placeholder="PROMO2024"></div>
+            <div><label class="input-label">Reward (coins)</label><input type="number" id="promo-reward" class="input-field" value="100"></div>
+            <div><label class="input-label">Max uses (0=unlimited)</label><input type="number" id="promo-uses" class="input-field" value="0"></div>
+            <div style="display:flex;align-items:flex-end"><button class="btn btn-success" onclick="createPromo()">&#x2705; Create</button></div>
+          </div>
+        </div>
+        <div id="promos-list" style="margin-top:16px"><div class="loading">Loading...</div></div>
+      </div>
+      <div id="tab-shop" class="admin-tab" style="display:none">
+        <div class="admin-tab-header"><h2>&#x1F6D2; Shop Items</h2></div>
+        <div class="admin-card">
+          <h3>&#x2795; Add Custom Item</h3>
+          <div class="admin-form-grid">
+            <div><label class="input-label">Name</label><input type="text" id="item-name" class="input-field" placeholder="Item name"></div>
+            <div><label class="input-label">Price</label><input type="number" id="item-price" class="input-field" value="100"></div>
+            <div><label class="input-label">Emoji</label><input type="text" id="item-emoji" class="input-field" placeholder="&#x1F381;"></div>
+            <div><label class="input-label">Type</label><select id="item-type" class="input-field"><option value="plant">Plant</option><option value="zombie">Zombie</option><option value="skin">Skin</option></select></div>
+            <div><label class="input-label">Rarity</label><select id="item-rarity" class="input-field"><option value="common">Common</option><option value="rare">Rare</option><option value="epic">Epic</option><option value="legendary">Legendary</option></select></div>
+            <div><label class="input-label">Description</label><input type="text" id="item-desc" class="input-field" placeholder="Description"></div>
+          </div>
+          <button class="btn btn-success" onclick="addShopItem()" style="margin-top:10px">&#x2795; Add Item</button>
+        </div>
+        <div id="shop-items-list" style="margin-top:16px"><div class="loading">Loading...</div></div>
+      </div>
+      <div id="tab-events" class="admin-tab" style="display:none">
+        <div class="admin-tab-header"><h2>&#x1F3C6; Events</h2></div>
+        <div class="admin-card">
+          <h3>&#x2795; Create Event</h3>
+          <div class="admin-form-grid">
+            <div><label class="input-label">Name</label><input type="text" id="event-name" class="input-field" placeholder="Event name"></div>
+            <div><label class="input-label">Target wins</label><input type="number" id="event-wins" class="input-field" value="100"></div>
+            <div><label class="input-label">Reward (coins)</label><input type="number" id="event-reward" class="input-field" value="500"></div>
+            <div><label class="input-label">Description</label><input type="text" id="event-desc" class="input-field" placeholder="Description"></div>
+          </div>
+          <button class="btn btn-success" onclick="createEvent()" style="margin-top:10px">&#x2795; Create</button>
+        </div>
+        <div id="events-list" style="margin-top:16px"><div class="loading">Loading...</div></div>
+      </div>
+    </div>
+  </div>
+  <div id="toast" class="toast hidden"></div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
